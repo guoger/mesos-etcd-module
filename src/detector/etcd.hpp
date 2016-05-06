@@ -24,6 +24,9 @@
 using namespace mesos;
 using namespace mesos::master::detector;
 
+namespace etcd {
+namespace detector {
+
 class EtcdMasterDetector : public MasterDetector
 {
 public:
@@ -41,5 +44,8 @@ public:
   virtual process::Future<Option<MasterInfo>> detect(
       const Option<MasterInfo>& previous = None());
 };
+
+} // namespace detector {
+} // namespace etcd {
 
 #endif // __DETECTOR_ETCD_HPP__

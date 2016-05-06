@@ -15,11 +15,9 @@
 // limitations under the License.
 
 #include <mesos/mesos.hpp>
-#include <mesos/module.hpp>
 
 #include <mesos/master/detector.hpp>
 
-#include <mesos/module/detector.hpp>
 #include <process/future.hpp>
 
 #include "etcd.hpp"
@@ -28,6 +26,9 @@ using namespace mesos;
 using namespace process;
 //using namespace mesos::master;
 using namespace mesos::master::detector;
+
+namespace etcd {
+namespace detector {
 
 EtcdMasterDetector::EtcdMasterDetector()
 {
@@ -48,21 +49,5 @@ Future<Option<MasterInfo>> EtcdMasterDetector::detect(
   return f;
 }
 
-static MasterDetector* createDetector(const Parameters& parameters)
-{
-  std::cout << "######### Hello, Detector!" << std::endl;
-  std::cout << parameters.DebugString() << std::endl;
-  return new EtcdMasterDetector();
-}
-
-
-// Declares a MasterDetector module named
-// 'org_apache_mesos_TestMasterDetector'.
-mesos::modules::Module<MasterDetector> org_apache_mesos_EtcdMasterDetector(
-    MESOS_MODULE_API_VERSION,
-    MESOS_VERSION,
-    "Apache Mesos",
-    "modules@mesos.apache.org",
-    "Test MasterDetector module.",
-    NULL,
-    createDetector);
+} // namespace detector {
+} // namespace etcd {

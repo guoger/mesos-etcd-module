@@ -24,6 +24,9 @@
 using namespace mesos;
 using namespace mesos::master::contender;
 
+namespace etcd {
+namespace contender {
+
 class EtcdMasterContender : public MasterContender
 {
 public:
@@ -34,5 +37,8 @@ public:
   virtual void initialize(const MasterInfo& masterInfo);
   virtual process::Future<process::Future<Nothing>> contend();
 };
+
+} // namespace contender {
+} // namespace etcd {
 
 #endif // __CONTENDER_ETCD_HPP__

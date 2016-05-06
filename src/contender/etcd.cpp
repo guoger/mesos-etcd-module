@@ -15,11 +15,9 @@
 // limitations under the License.
 
 #include <mesos/mesos.hpp>
-#include <mesos/module.hpp>
 
 #include <mesos/master/contender.hpp>
 
-#include <mesos/module/contender.hpp>
 #include <process/future.hpp>
 
 #include "etcd.hpp"
@@ -28,6 +26,9 @@ using namespace mesos;
 using namespace process;
 //using namespace mesos::master;
 using namespace mesos::master::contender;
+
+namespace etcd {
+namespace contender {
 
 EtcdMasterContender::EtcdMasterContender()
 {
@@ -51,21 +52,5 @@ Future<Future<Nothing>> EtcdMasterContender::contend()
   return f;
 }
 
-static MasterContender* createContender(const Parameters& parameters)
-{
-  std::cout << "######### Hello, Contender!" << std::endl;
-  std::cout << parameters.DebugString() << std::endl;
-  return new EtcdMasterContender();
-}
-
-
-// Declares a MasterContender module named
-// 'org_apache_mesos_TestMasterContender'.
-mesos::modules::Module<MasterContender> org_apache_mesos_EtcdMasterContender(
-    MESOS_MODULE_API_VERSION,
-    MESOS_VERSION,
-    "Apache Mesos",
-    "modules@mesos.apache.org",
-    "Test MasterContender module.",
-    NULL,
-    createContender);
+} // namespace contender {
+} // namespace etcd {
