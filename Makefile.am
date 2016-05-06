@@ -31,11 +31,8 @@ AM_LIBS = $(PTHREAD_LIBS)
 AM_CPPFLAGS = $(MESOS_CPPFLAGS) -Wall -Werror
 
 # Library containing test contender module.
-pkglib_LTLIBRARIES += libcontender.la
-libcontender_la_SOURCES = src/contender/etcd.cpp
-libcontender_la_LDFLAGS = -release $(PACKAGE_VERSION) -shared $(MESOS_LDFLAGS)
+pkglib_LTLIBRARIES += libmesos_etcd_module.la
+libmesos_etcd_module_la_SOURCES = src/contender/etcd.cpp \
+                                  src/detector/etcd.cpp
 
-# Library containing test contender module.
-pkglib_LTLIBRARIES += libdetector.la
-libdetector_la_SOURCES = src/detector/etcd.cpp
-libdetector_la_LDFLAGS = -release $(PACKAGE_VERSION) -shared $(MESOS_LDFLAGS)
+libmesos_etcd_module_la_LDFLAGS = -release $(PACKAGE_VERSION) -shared $(MESOS_LDFLAGS)
