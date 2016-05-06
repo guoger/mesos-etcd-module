@@ -22,32 +22,21 @@
 #include <mesos/module/contender.hpp>
 #include <process/future.hpp>
 
-#include <stout/try.hpp>
+#include "etcd.hpp"
 
 using namespace mesos;
 using namespace process;
-using namespace mesos::master;
+//using namespace mesos::master;
 using namespace mesos::master::contender;
-
-class EtcdMasterContender : public MasterContender
-{
-public:
-  explicit EtcdMasterContender();
-  virtual ~EtcdMasterContender();
-
-  // MasterContender implementation.
-  virtual void initialize(const MasterInfo& masterInfo);
-  virtual process::Future<process::Future<Nothing>> contend();
-};
 
 EtcdMasterContender::EtcdMasterContender()
 {
-  std::cout << "######### Constructor!" << std::endl;
+  std::cout << "######### Contender Constructor!" << std::endl;
 }
 
 EtcdMasterContender::~EtcdMasterContender()
 {
-  std::cout << "######### Destructor" << std::endl;
+  std::cout << "######### Contender Destructor" << std::endl;
 }
 
 void EtcdMasterContender::initialize(const MasterInfo& masterInfo)
@@ -64,10 +53,11 @@ Future<Future<Nothing>> EtcdMasterContender::contend()
 
 static MasterContender* createContender(const Parameters& parameters)
 {
-  std::cout << "######### Hello, world!" << std::endl;
+  std::cout << "######### Hello, Contender!" << std::endl;
   std::cout << parameters.DebugString() << std::endl;
   return new EtcdMasterContender();
 }
+
 
 // Declares a MasterContender module named
 // 'org_apache_mesos_TestMasterContender'.

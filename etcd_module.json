@@ -1,0 +1,32 @@
+ {
+   "libraries": [
+     {
+       "file": "/Users/guoger/workspace/modules/build/.libs/libcontender-0.1.dylib",
+       "modules": [
+         {
+           "name": "org_apache_mesos_EtcdMasterContender",
+           "parameters": [
+            {
+              "key": "hello",
+              "value": "contender"
+            }
+           ]
+         }
+       ]
+     },
+     {
+       "file": "/Users/guoger/workspace/modules/build/.libs/libdetector-0.1.dylib",
+       "modules": [
+         {
+           "name": "org_apache_mesos_EtcdMasterDetector",
+           "parameters": [
+            {
+              "key": "hello",
+              "value": "detector"
+            }
+           ]
+         }
+       ]
+     }
+   ]
+ }
