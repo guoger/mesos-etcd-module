@@ -26,7 +26,9 @@
 #include "contender/etcd.hpp"
 #include "detector/etcd.hpp"
 
-using namespace mesos;
+#include "url.hpp"
+
+//using namespace mesos;
 using namespace mesos::master::contender;
 using namespace mesos::master::detector;
 
@@ -34,7 +36,8 @@ static MasterContender* createContender(const Parameters& parameters)
 {
   std::cout << "######### Hello, Contender!" << std::endl;
   std::cout << parameters.DebugString() << std::endl;
-  return new etcd::contender::EtcdMasterContender();
+  etcd::URL url;
+  return new etcd::contender::EtcdMasterContender(url);
 }
 
 

@@ -18,9 +18,19 @@
 
 #include <mesos/master/contender.hpp>
 
+#include <process/defer.hpp>
 #include <process/future.hpp>
+#include <process/owned.hpp>
+#include <process/pid.hpp>
+#include <process/process.hpp>
+
+#include <stout/check.hpp>
+#include <stout/lambda.hpp>
+#include <stout/protobuf.hpp>
 
 #include "etcd.hpp"
+#include "contender.hpp"
+#include "client.hpp"
 
 using namespace mesos;
 using namespace process;
@@ -30,26 +40,86 @@ using namespace mesos::master::contender;
 namespace etcd {
 namespace contender {
 
-EtcdMasterContender::EtcdMasterContender()
+class EtcdMasterContenderProcess : public Process<EtcdMasterContenderProcess>
 {
-  std::cout << "######### Contender Constructor!" << std::endl;
+public:
+  EtcdMasterContenderProcess(const etcd::URL& _url) : contender(NULL), url(_url)
+  {
+  }
+
+  virtual ~EtcdMasterContenderProcess()
+  {
+    // TODO(cmaloney): If currently the leader, then delete the key.
+    // Currently the key will naturally time out after the TTL.
+  }
+
+  // Explicitely use 'initialize' since we're overloading below.
+  using process::ProcessBase::initialize;
+
+  // MasterContender implementation.
+  void initialize(const MasterInfo& masterInfo);
+  Future<Future<Nothing>> contend();
+
+private:
+  LeaderContender* contender;
+
+  const etcd::URL url;
+  Option<MasterInfo> masterInfo;
+};
+
+
+EtcdMasterContender::EtcdMasterContender(const etcd::URL& url)
+{
+  process = new EtcdMasterContenderProcess(url);
+  spawn(process);
 }
+
 
 EtcdMasterContender::~EtcdMasterContender()
 {
   std::cout << "######### Contender Destructor" << std::endl;
+  terminate(process);
+  process::wait(process);
+  delete process;
 }
 
 void EtcdMasterContender::initialize(const MasterInfo& masterInfo)
 {
   std::cout << "######### initialize()" << std::endl;
+  process->initialize(masterInfo);
 }
+
 
 Future<Future<Nothing>> EtcdMasterContender::contend()
 {
   std::cout << "######### contend()" << std::endl;
-  Future<Future<Nothing>> f;
-  return f;
+  return dispatch(process, &EtcdMasterContenderProcess::contend);
+}
+
+
+void EtcdMasterContenderProcess::initialize(const MasterInfo& _masterInfo)
+{
+  masterInfo = _masterInfo;
+}
+
+
+Future<Future<Nothing>> EtcdMasterContenderProcess::contend()
+{
+  if (masterInfo.isNone()) {
+    return Failure("Initialize the contender first");
+  }
+
+  // Check if we're already contending.
+  if (contender != NULL) {
+    LOG(INFO) << "Withdrawing the previous contending before recontending";
+    delete contender;
+  }
+
+  // Serialize the MasterInfo to JSON.
+  JSON::Object json = JSON::protobuf(masterInfo.get());
+
+  contender = new etcd::contender::LeaderContender(url, stringify(json), DEFAULT_ETCD_TTL);
+  return contender->contend();
 }
 
 } // namespace contender {

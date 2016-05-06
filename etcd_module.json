@@ -7,8 +7,8 @@
            "name": "org_apache_mesos_EtcdMasterContender",
            "parameters": [
             {
-              "key": "hello",
-              "value": "contender"
+              "key": "url",
+              "value": "etcd://192.168.56.1:2342"
             }
            ]
          },

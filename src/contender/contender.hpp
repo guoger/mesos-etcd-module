@@ -14,39 +14,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __CONTENDER_ETCD_HPP__
-#define __CONTENDER_ETCD_HPP__
+#ifndef __ETCD_CONTENDER_HPP
+#define __ETCD_CONTENDER_HPP
 
-//#include <mesos/mesos.hpp>
+#include <string>
 
-#include <mesos/master/contender.hpp>
+#include <process/future.hpp>
 
-#include "url.hpp"
+#include <stout/nothing.hpp>
+#include <stout/option.hpp>
 
-using namespace mesos;
-using namespace mesos::master::contender;
+#include "client.hpp"
 
 namespace etcd {
 namespace contender {
 
-const Duration DEFAULT_ETCD_TTL = Seconds(5);
+// Forward declaration.
+class LeaderContenderProcess;
 
-// Forward declarations.
-class EtcdMasterContenderProcess;
 
-class EtcdMasterContender : public MasterContender
+// Provides an abstraction for contending to be the leader using etcd.
+class LeaderContender
 {
 public:
-  explicit EtcdMasterContender(const etcd::URL& url);
-  virtual ~EtcdMasterContender();
-  virtual void initialize(const MasterInfo& masterInfo);
-  virtual process::Future<process::Future<Nothing>> contend();
+  LeaderContender(const URL& url, const std::string& data, const Duration& ttl);
+
+  virtual ~LeaderContender();
+
+  process::Future<process::Future<Nothing> > contend();
 
 private:
-  EtcdMasterContenderProcess* process;
+  LeaderContenderProcess* process;
 };
 
 } // namespace contender {
 } // namespace etcd {
 
-#endif // __CONTENDER_ETCD_HPP__
+#endif // __ETCD_CONTENDER_HPP
