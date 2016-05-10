@@ -43,3 +43,6 @@ missing
 .swp
 Debug/
 xcode-mesos/
+
+# Project specific
+etcd_module.json

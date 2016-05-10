@@ -1,14 +1,14 @@
  {
    "libraries": [
      {
-       "file": "/Users/guoger/workspace/modules/build/.libs/libmesos_etcd_module-0.1.dylib",
+       "file": "/path/to/libmesos_etcd_module-0.1.dylib",
        "modules": [
          {
            "name": "org_apache_mesos_EtcdMasterContender",
            "parameters": [
             {
               "key": "url",
-              "value": "etcd://192.168.56.1:2342"
+              "value": "etcd://127.0.0.1:2379/v2/keys/master"
             }
            ]
          },
@@ -16,8 +16,8 @@
            "name": "org_apache_mesos_EtcdMasterDetector",
            "parameters": [
             {
-              "key": "hello",
-              "value": "detector"
+              "key": "url",
+              "value": "etcd://127.0.0.1:2379/v2/keys/master"
             }
            ]
          }
