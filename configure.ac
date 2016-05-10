@@ -37,9 +37,9 @@ AC_ARG_WITH([mesos_build_dir],
 if test -d "$mesos"; then
   MESOS_CPPFLAGS="-I${mesos}/include"
   if test -d "${mesos}/lib"; then
-    MESOS_LDFLAGS="-L${mesos}/lib -lmesos -lglog -lprotobuf"
+    MESOS_LDFLAGS="-L${mesos}/lib -lmesos"
   else
-    MESOS_LDFLAGS="-L${mesos}/lib64 -lmesos -lglog -lprotobuf"
+    MESOS_LDFLAGS="-L${mesos}/lib64 -lmesos"
   fi
 else
 
@@ -159,9 +159,9 @@ AC_CHECK_HEADER([google/protobuf/message.h],
                     [AC_MSG_ERROR([google protobuf is not installed.])])],
                 [AC_MSG_ERROR([google protobuf is not installed.])])
 
-AC_CHECK_HEADER([picojson.h],
-                [],
-                [AC_MSG_ERROR([picojson is not installed.])])
+#AC_CHECK_HEADER([picojson.h],
+#                [],
+#                [AC_MSG_ERROR([picojson is not installed.])])
 
 AC_CHECK_HEADERS([boost/lexical_cast.hpp boost/functional/hash.hpp],
                 [],
