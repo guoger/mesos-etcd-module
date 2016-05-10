@@ -17,7 +17,45 @@
  */
 
 #include <gtest/gtest.h>
+#include <signal.h> // For strsignal.
+#include <stdio.h>  // For freopen.
+#include <sys/wait.h> // For wait (and associated macros).
+
+#include <stout/os.hpp>
+
+#include "common/status_utils.hpp"
+
+using std::string;
+
+void execute()
+{
+  Result<string> path = os::realpath("../tests/etcd_tests.sh");
+  if (!path.isSome()) {
+    FAIL() << "Failed to locate script etcd_tests.sh: "
+           << (path.isError() ? path.error() : "No such file or directory");
+  }
+
+  // Fork a process to change directory and run the test.
+  pid_t pid;
+  if ((pid = fork()) == -1) {
+    FAIL() << "Failed to fork to launch script";
+  }
+
+  if (pid > 0) {
+    // In parent process.
+    int status;
+    while (wait(&status) != pid || WIFSTOPPED(status));
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+      FAIL() << path.get().c_str() << " " << WSTRINGIFY(status);
+    }
+  } else {
+    // In child process. 
+    execl(path.get().c_str(), "", (char*) NULL);
+  }
+}
 
 TEST(EtcdTest, MultiMaster) {
-  
+  execute();  
 }
+

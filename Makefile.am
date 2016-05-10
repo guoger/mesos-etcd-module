@@ -54,6 +54,7 @@ etcd_tests_SOURCES = \
   tests/etcd_tests.cpp
 
 etcd_tests_CPPFLAGS = -I$(GTEST)/include
+etcd_tests_CPPFLAGS += -I$(MESOSBUILD)/../src
 etcd_tests_LDADD = $(LIBPROCESS)/3rdparty/libgmock.la
 
 $(LIBPROCESS)/3rdparty/libgmock.la:
