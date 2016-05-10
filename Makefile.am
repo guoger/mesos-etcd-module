@@ -43,3 +43,17 @@ libmesos_etcd_module_la_SOURCES =	\
 
 libmesos_etcd_module_la_CPPFLAGS = -I$(top_srcdir)/src
 libmesos_etcd_module_la_LDFLAGS = -release $(PACKAGE_VERSION) -shared $(MESOS_LDFLAGS)
+
+LIBPROCESS = $(MESOSBUILD)/3rdparty/libprocess
+GMOCK = $(LIBPROCESS)/3rdparty/gmock-1.7.0
+
+check_PROGRAMS = etcd-tests
+etcd_tests_SOURCES = tests/main.cpp
+etcd_tests_CPPFLAGS = -I$(GTEST)/include
+etcd_tests_LDADD = $(LIBPROCESS)/3rdparty/libgmock.la
+
+$(LIBPROCESS)/3rdparty/libgmock.la:
+        @cd $(LIBPROCESS)/3rdparty && $(MAKE) $(AM_MAKEFLAGS) libgmock.la
+
+check-local: all
+        ./etcd-tests
