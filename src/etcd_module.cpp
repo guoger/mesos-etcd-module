@@ -36,8 +36,26 @@ static MasterContender* createContender(const Parameters& parameters)
 {
   std::cout << "######### Hello, Contender!" << std::endl;
   std::cout << parameters.DebugString() << std::endl;
-  etcd::URL url;
-  return new etcd::contender::EtcdMasterContender(url);
+  Option<std::string> urls;
+  foreach (const Parameter& parameter, parameters.parameter()) {
+    if (parameter.key() == "url") {
+      urls = parameter.value();
+    }
+  }
+
+  if (urls.isNone()) {
+    LOG(ERROR) << "No etcd url provided";
+    return NULL;
+  }
+
+  Try<etcd::URL> urls_ = etcd::URL::parse(urls.get());
+  if (urls_.isError()) {
+    LOG(ERROR) << "Parameter '" << urls.get() << "' could not be parsed into "
+                  "a valid URL object: " << urls_.error();
+    return NULL;
+  }
+
+  return new etcd::contender::EtcdMasterContender(urls_.get());
 }
 
 
