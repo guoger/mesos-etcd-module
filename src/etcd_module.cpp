@@ -75,7 +75,26 @@ static MasterDetector* createDetector(const Parameters& parameters)
 {
   std::cout << "######### Hello, Detector!" << std::endl;
   std::cout << parameters.DebugString() << std::endl;
-  return new etcd::detector::EtcdMasterDetector();
+  Option<std::string> urls;
+  foreach (const Parameter& parameter, parameters.parameter()) {
+    if (parameter.key() == "url") {
+      urls = parameter.value();
+    }
+  }
+
+  if (urls.isNone()) {
+    LOG(ERROR) << "No etcd url provided";
+    return NULL;
+  }
+
+  Try<etcd::URL> urls_ = etcd::URL::parse(urls.get());
+  if (urls_.isError()) {
+    LOG(ERROR) << "Parameter '" << urls.get() << "' could not be parsed into "
+                  "a valid URL object: " << urls_.error();
+    return NULL;
+  }
+
+  return new etcd::detector::EtcdMasterDetector(urls_.get());
 }
 
 

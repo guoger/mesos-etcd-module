@@ -35,6 +35,7 @@ pkglib_LTLIBRARIES += libmesos_etcd_module.la
 libmesos_etcd_module_la_SOURCES = \
   src/contender/contender.cpp \
   src/contender/etcd.cpp \
+  src/detector/detector.cpp \
   src/detector/etcd.cpp \
   src/client.cpp \
   src/url.cpp \

@@ -14,42 +14,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __DETECTOR_ETCD_HPP__
-#define __DETECTOR_ETCD_HPP__
+#ifndef __ETCD_DETECTOR_HPP
+#define __ETCD_DETECTOR_HPP
 
-//#include <mesos/mesos.hpp>
+#include <string>
 
-#include <mesos/master/detector.hpp>
+#include <process/future.hpp>
 
-#include "url.hpp"
+#include <stout/nothing.hpp>
+#include <stout/option.hpp>
 
-using namespace mesos;
-using namespace mesos::master::detector;
+#include "client.hpp"
 
 namespace etcd {
-namespace detector {
 
-// Forward declarations.
-class EtcdMasterDetectorProcess;
+// Forward declaration.
+class LeaderDetectorProcess;
 
-class EtcdMasterDetector : public MasterDetector
+
+// Provides an abstraction for detecting the leader of a etcd node.
+class LeaderDetector
 {
 public:
-  // Creates a detector which uses etcd to determine (i.e., elect) a
-  // leading master.
-  explicit EtcdMasterDetector(const etcd::URL& url);
+  LeaderDetector(const URL& url);
 
-  virtual ~EtcdMasterDetector();
+  virtual ~LeaderDetector();
 
-  // MasterDetector implementation.
-  virtual process::Future<Option<MasterInfo>> detect(
-      const Option<MasterInfo>& previous = None());
+  process::Future<Option<std::string>> detect(
+    const Option<std::string>& previous);
 
 private:
-  EtcdMasterDetectorProcess* process;
+  LeaderDetectorProcess* process;
 };
 
-} // namespace detector {
 } // namespace etcd {
 
-#endif // __DETECTOR_ETCD_HPP__
+#endif // __ETCD_DETECTOR_HPP
