@@ -1,118 +1,42 @@
-# A Mesos Contender and Detector Module based on Etcd
-Mostly copied from https://github.com/mesos/modules
+# Mesos Contender and Detector Modules for etcd
+*Most of the code are borrowed from https://github.com/lins05/mesos/tree/etcd and https://github.com/mesos/modules. The first link is previous work done before contender and detector being modulerized. The second is an example of Mesos module. This work is still under active development and may change on daily basis.*
 
 # How-To
-Basically you need to supply --with-XXX=/path/to/pkg to `configure` for either Mesos or Module, in order to make sure they are compiled against same dependencies.
+## Linux
+### Step 1. Patch Mesos
+_IMPORTANT_ Currently `libprocess` does not have `PUT`, which is required to run contender against etcd. To patch Mesos, You can either checkout [this branch](https://github.com/guoger/mesos/tree/etcd) or patch Mesos according to the diff. We are actively working on merging this into Mesos mainstream.
+
+### Step 2. Build
+Refer to http://mesos.apache.org/gettingstarted/
+
+`make install` when compilation is finished. If you don't want system-wide Mesos installation, supply `--prefix=/path/to/install/location` to `configure`
+
+### Step 3. Build Mesos contender and detector module
+```
+git clone https://github.com/guoger/mesos-etcd-module.git
+cd mesos-etcd-module
+./bootstrap
+mkdir build && cd build
+../configure --with-mesos=$MESOS_INSTALL CXXFLAGS="-I$MESOS_HOME/build/3rdparty/libprocess/3rdparty/glog-0.3.3/src/ -I$MESOS_HOME/build/3rdparty/libprocess/3rdparty/protobuf-2.6.1/src/ -I$MESOS_HOME/build/3rdparty/libprocess/3rdparty/boost-1.53.0/ -I$MESOS_HOME/include/"
+make
+```
+`$MESOS_INSTALL` is the install path specified in previous step. `$MESOS_HOME` is Mesos root directory. We compile module against libraries (protobuf, glog, boost) shipped with Mesos source code. These libraries are extracted to Mesos build directory.
+
+Running above commands will produce shared library file `libmesos_etcd_module-0.1.so` in `.libs/`.
+
+### Step 4. Create Module config file
+An example JSON config file `etcd_module.json.sample` can be found in root directory of the project. Grab a copy, replace `file` and `url` value according to your environment.
+
+### Step 5. Start Mesos master
+Run `./bin/mesos-master.sh` with following additional flags:
+`--modules="file://etcd_module.json"`: the JSON file created in previous step
+`--master_contender=org_apache_mesos_EtcdMasterContender`
+`--master_detector=org_apache_mesos_EtcdMasterDetector`
 
 ## OSX
-### Install dependencies:
-1. google-protobuf
-2. glog
-3. boost
-4. picojson
+_work in progress_
 
-### Compile Mesos with system packages instead of those ones coming with Mesos
-```
-../configure --with-glog=/usr/local --with-protobuf=/usr/local --with-boost=/usr/local --prefix=/$HOME/mesos-install --disable-java --disable-python
-make
-make install
-```
-With --prefix, make installs packages to user specified location.
+## Windows
+_help needed_
 
-
-### Compile Module
-```
-./bootstrap
-mkdir build && cd build
-../configure --with-mesos=/path/to/mesos/installation
-make
-```
-
-### Run Mesos master with modules
-```
-./bin/mesos-master.sh --ip=0.0.0.0 --work_dir=~/workspace/mesos_work_dir/ --modules="file://$MODULE_HOME/etcd_module.json" --master_contender=org_apache_mesos_EtcdMasterContender --master_detector=org_apache_mesos_EtcdMasterDetector
-```
-
-_Following content is copied directly from above link_
-# Building the Modules
-
-Mesos modules provide a way to easily extend inner workings of Mesos by creating
-and using shared libraries that are loaded on demand. Modules can be used to
-customize Mesos without having to recompiling/relinking for each specific use
-case. Modules can isolate external dependencies into separate libraries, thus
-resulting into a smaller Mesos core. Modules also make it easy to experiment
-with new features. For example, imagine loadable allocators that contain a VM
-(Lua, Python, …) which makes it possible to try out new allocator algorithms
-written in scripting languages without forcing those dependencies into the
-project. Finally, modules provide an easy way for third parties to easily extend
-Mesos without having to know all the internal details.
-
-For more details, please see
-[Mesos Modules](http://mesos.apache.org/documentation/latest/modules/).
-
-
-## Prerequisites
-
-Building Mesos modules requires system-wide installation of the following:
-
-1. google-protobuf
-2. glog
-3. boost
-4. picojson
-
-## Build Mesos with some unbundled dependencies
-
-### Preparing Mesos source code
-First we need to prepare Mesos source code.  You can either download the Mesos
-standard release in the form of a tarball and extract it, or clone the git
-repository.
-
-Let us assume you did extract/clone
-the repository into `~/mesos`. Let us also assume that you build Mesos in a
-subdirectory
-called `build` (`~/mesos/build`).
-
-### Building and Installing Mesos
-Next, we need to configure and build Mesos.
-Due to the fact that modules will need to have access to a couple of libprocess
-dependencies, Mesos itself should get built with unbundled dependencies to
-reduce chances of problems introduced by varying versions (libmesos vs. module
-library).
-
-We recommend using the following configure options:
-
-```
-cd <mesos-source-tree>
-mkdir build
-cd build
-../configure --with-glog=/usr/local --with-protobuf=/usr/local --with-boost=/usr/local --prefix=$HOME/usr
-make
-make install
-```
-
-Note that the `--prefix=$HOME/usr` is required only if you don't want to do a system-wide Mesos installation.
-
-## Build Mesos Modules
-
-Once that is done, extract/clone the mesos-modules package. For the sake of this
-example, that could be in `~/mesos-modules`. Note that you should not put
-`mesos-modules` into the `mesos` folder.
-
-You may now run start building the modules.
-
-The configuration phase needs to know some details about your Mesos installation
-location, hence the following are used:
-`--with-mesos=/path/to/mesos/installation`
-
-## Example
-```
-./bootstrap
-mkdir build && cd build
-../configure --with-mesos=/path/to/mesos/installation
-make
-```
-
-At this point, the Module libraries are ready in `/build/.libs`.
-
-## Using Mesos Modules
-See [Mesos Modules](http://mesos.apache.org/documentation/latest/modules/).
+For more details, see [Mesos Modules](http://mesos.apache.org/documentation/latest/modules/).
