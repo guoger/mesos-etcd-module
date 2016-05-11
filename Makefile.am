@@ -32,13 +32,13 @@ AM_CPPFLAGS = $(MESOS_CPPFLAGS) -Wall -Werror
 
 # Library containing test contender module.
 pkglib_LTLIBRARIES += libmesos_etcd_module.la
-libmesos_etcd_module_la_SOURCES = \
-  src/contender/contender.cpp \
-  src/contender/etcd.cpp \
-  src/detector/detector.cpp \
-  src/detector/etcd.cpp \
-  src/client.cpp \
-  src/url.cpp \
+libmesos_etcd_module_la_SOURCES =	\
+  src/contender/contender.cpp		\
+  src/contender/etcd.cpp			\
+  src/detector/detector.cpp			\
+  src/detector/etcd.cpp				\
+  src/client.cpp					\
+  src/url.cpp						\
   src/etcd_module.cpp
 
 libmesos_etcd_module_la_CPPFLAGS = -I$(top_srcdir)/src

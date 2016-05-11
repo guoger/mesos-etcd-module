@@ -29,8 +29,8 @@
 
 #include "url.hpp"
 
-namespace etcd
-{
+namespace etcd {
+
 struct Node;
 class EtcdClientProcess;
 
@@ -55,6 +55,7 @@ public:
 private:
   EtcdClientProcess* process;
 };
+
 
 // Represents the JSON structure etcd returns for a node (key/value).
 struct Node {
@@ -97,7 +98,6 @@ struct Response {
   Option<std::string> message;
   Option<uint64_t> index;
 };
-
 
 } // namespace etcd {
 

@@ -31,7 +31,6 @@ namespace etcd {
 // Forward declaration.
 class LeaderDetectorProcess;
 
-
 // Provides an abstraction for detecting the leader of a etcd node.
 class LeaderDetector
 {

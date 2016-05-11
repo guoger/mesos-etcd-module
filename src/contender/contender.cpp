@@ -85,10 +85,13 @@ LeaderContenderProcess::LeaderContenderProcess(const URL& _url,
 LeaderContenderProcess::~LeaderContenderProcess()
 {
 }
+
+
 void LeaderContenderProcess::finalize()
 {
   // TODO(lins05): implementation
 }
+
 
 Future<Future<Nothing>> LeaderContenderProcess::contend()
 {
@@ -97,6 +100,7 @@ Future<Future<Nothing>> LeaderContenderProcess::contend()
     .repair(defer(self(), &Self::repair, lambda::_1))
     .then(defer(self(), &Self::_contend, lambda::_1));
 }
+
 
 Future<Nothing> LeaderContenderProcess::_contend(const Option<etcd::Node>& node)
 {
@@ -175,6 +179,7 @@ Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
     .then(defer(self(), &Self::__contend, lambda::_1));
 }
 
+
 Future<Option<etcd::Node>> LeaderContenderProcess::repair(
   const Future<Option<etcd::Node>>&)
 {
@@ -182,6 +187,7 @@ Future<Option<etcd::Node>> LeaderContenderProcess::repair(
   // cause the contending loop to continue.
   return None();
 }
+
 
 LeaderContender::LeaderContender(const etcd::URL& url,
                                  const string& data,

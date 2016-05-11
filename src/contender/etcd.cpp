@@ -77,22 +77,20 @@ EtcdMasterContender::EtcdMasterContender(const etcd::URL& url)
 
 EtcdMasterContender::~EtcdMasterContender()
 {
-  std::cout << "######### Contender Destructor" << std::endl;
   terminate(process);
   process::wait(process);
   delete process;
 }
 
+
 void EtcdMasterContender::initialize(const MasterInfo& masterInfo)
 {
-  std::cout << "######### initialize()" << std::endl;
   process->initialize(masterInfo);
 }
 
 
 Future<Future<Nothing>> EtcdMasterContender::contend()
 {
-  std::cout << "######### contend()" << std::endl;
   return dispatch(process, &EtcdMasterContenderProcess::contend);
 }
 

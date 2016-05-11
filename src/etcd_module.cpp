@@ -34,8 +34,6 @@ using namespace mesos::master::detector;
 
 static MasterContender* createContender(const Parameters& parameters)
 {
-  std::cout << "######### Hello, Contender!" << std::endl;
-  std::cout << parameters.DebugString() << std::endl;
   Option<std::string> urls;
   foreach (const Parameter& parameter, parameters.parameter()) {
     if (parameter.key() == "url") {
@@ -44,7 +42,7 @@ static MasterContender* createContender(const Parameters& parameters)
   }
 
   if (urls.isNone()) {
-    LOG(ERROR) << "No etcd url provided";
+    LOG(ERROR) << "No etcd URLs provided";
     return NULL;
   }
 
@@ -73,8 +71,6 @@ mesos::modules::Module<MasterContender> org_apache_mesos_EtcdMasterContender(
 
 static MasterDetector* createDetector(const Parameters& parameters)
 {
-  std::cout << "######### Hello, Detector!" << std::endl;
-  std::cout << parameters.DebugString() << std::endl;
   Option<std::string> urls;
   foreach (const Parameter& parameter, parameters.parameter()) {
     if (parameter.key() == "url") {
@@ -83,7 +79,7 @@ static MasterDetector* createDetector(const Parameters& parameters)
   }
 
   if (urls.isNone()) {
-    LOG(ERROR) << "No etcd url provided";
+    LOG(ERROR) << "No etcd URLs provided";
     return NULL;
   }
 

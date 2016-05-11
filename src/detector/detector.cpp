@@ -38,8 +38,8 @@ using namespace process;
 using std::set;
 using std::string;
 
-namespace etcd
-{
+namespace etcd {
+
 class LeaderDetectorProcess : public Process<LeaderDetectorProcess>
 {
 public:
@@ -61,6 +61,7 @@ private:
 
   EtcdClient client;
 };
+
 
 LeaderDetectorProcess::LeaderDetectorProcess(const URL& url)
   : client(url)
@@ -114,6 +115,7 @@ Future<Option<string>> LeaderDetectorProcess::_detect(
     .then(defer(self(), &Self::detect, previous));
 }
 
+
 Future<Option<etcd::Node>> LeaderDetectorProcess::repair(
   const Future<Option<etcd::Node>>&)
 {
@@ -121,6 +123,7 @@ Future<Option<etcd::Node>> LeaderDetectorProcess::repair(
   // cause the detection loop to continue.
   return None();
 }
+
 
 LeaderDetector::LeaderDetector(const URL& url)
 {

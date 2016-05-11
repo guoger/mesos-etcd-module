@@ -76,6 +76,7 @@ Future<Option<MasterInfo>> EtcdMasterDetectorProcess::detect(
     .then(defer(self(), &Self::detected, previous, lambda::_1));
 }
 
+
 Future<Option<MasterInfo>> EtcdMasterDetectorProcess::detected(
   const Option<MasterInfo>& previous, const Option<string>& data)
 {

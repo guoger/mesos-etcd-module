@@ -39,8 +39,8 @@ using namespace process;
 using std::string;
 using std::vector;
 
-namespace etcd
-{
+namespace etcd {
+
 Try<Node*> Node::parse(const JSON::Object& object)
 {
   Owned<Node> node(new Node);
@@ -248,6 +248,7 @@ Failure failure(const Response& response)
 
   return Failure(message);
 }
+
 
 class EtcdClientProcess : public Process<EtcdClientProcess>
 {
@@ -459,6 +460,7 @@ Future<Option<Node>> EtcdClientProcess::watch(const Option<uint64_t>& waitIndex)
   return _watch(urls, 0);
 }
 
+
 Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
                                                uint32_t index)
 {
@@ -501,6 +503,7 @@ Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
   return Failure("Expecting 'action' in response");
 }
 
+
 EtcdClient::EtcdClient(const URL& url, const Option<Duration>& defaultTTL)
 {
   process = new EtcdClientProcess(url, defaultTTL);
@@ -519,10 +522,12 @@ process::Future<Option<Node>> EtcdClient::create(
                   prevIndex, prevValue);
 }
 
+
 process::Future<Option<Node>> EtcdClient::get()
 {
   return dispatch(process, &EtcdClientProcess::get);
 }
+
 
 process::Future<Option<Node>> EtcdClient::watch(
   const Option<uint64_t>& waitIndex)
