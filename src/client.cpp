@@ -348,7 +348,7 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
   http::URL url = urls[index];
 
   // TODO(benh): Add connection timeout once supported by http::put.
-  return http::put(url)
+  return http::request(http::createRequest(url, "PUT"))
     .then(lambda::bind(&parse, lambda::_1))
     .then(defer(self(), &EtcdClientProcess::__create, lambda::_1))
     .repair(defer(self(), &EtcdClientProcess::_create, urls, index + 1));
