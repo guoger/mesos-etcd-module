@@ -340,9 +340,10 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
   // If all urls has been tried for a round, wait for several seconds
   // before trying again.
   if (index >= urls.size()) {
-    Promise<Option<Node>>* promise = new Promise<Option<Node>>();
-    return promise->future().after(
-      Seconds(10), defer(self(), &EtcdClientProcess::_create, urls, 0));
+    return Failure("Cannot contact etcd cluster");
+//    Promise<Option<Node>>* promise = new Promise<Option<Node>>();
+//    return promise->future().after(
+//      Seconds(10), defer(self(), &EtcdClientProcess::_create, urls, 0));
   }
 
   http::URL url = urls[index];

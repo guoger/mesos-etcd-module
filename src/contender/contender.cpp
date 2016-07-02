@@ -67,7 +67,7 @@ private:
   Future<Nothing> ___contend(const etcd::Node& node);
 
   // Helper for repairing failures from etcd::watch.
-  Future<Option<etcd::Node>> repair(const Future<Option<etcd::Node>>&);
+  Future<Option<etcd::Node>> repair();
 
   Option<Future<Nothing>> future;
   Option<Promise<Future<Nothing>>*> contending;
@@ -97,7 +97,7 @@ Future<Future<Nothing>> LeaderContenderProcess::contend()
 {
   VLOG(2) << "contending with data" << data;
   return client.get()
-    .repair(defer(self(), &Self::repair, lambda::_1))
+    .repair(defer(self(), &Self::repair))
     .then(defer(self(), &Self::_contend, lambda::_1));
 }
 
@@ -133,7 +133,7 @@ Future<Nothing> LeaderContenderProcess::_contend(const Option<etcd::Node>& node)
   // maximum watch time limit. Instead, we simply resume contending
   // after 'etcd::watch' completes or fails.
   return client.watch(waitIndex)
-    .repair(defer(self(), &Self::repair, lambda::_1))
+    .repair(defer(self(), &Self::repair))
     .then(lambda::bind(&EtcdClient::get, client))
     .then(defer(self(), &Self::_contend, lambda::_1));
 }
@@ -170,8 +170,8 @@ Future<Nothing> LeaderContenderProcess::__contend(
   // maximum watch time limit. Instead, we simply resume contending
   // after 'etcd::watch' completes or fails.
   return client.watch(waitIndex)
-    .after(Seconds(ttl * 8 / 10), defer(self(), &Self::repair, lambda::_1))
-    .repair(defer(self(), &Self::repair, lambda::_1))
+    .after(Seconds(ttl * 8 / 10), defer(self(), &Self::repair))
+    .repair(defer(self(), &Self::repair))
     .then(defer(self(), &Self::___contend, node.get()));
 }
 
@@ -180,12 +180,12 @@ Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
 {
   std::cout << "###### LeaderContenderProcess::___contend" << std::endl;
   return client.create(data, ttl, true, node.modifiedIndex)
-    .then(defer(self(), &Self::__contend, lambda::_1));
+    .then(defer(self(), &Self::__contend, lambda::_1))
+    .repair(defer(self(), &Self::repair));
 }
 
 
-Future<Option<etcd::Node>> LeaderContenderProcess::repair(
-  const Future<Option<etcd::Node>>&)
+Future<Option<etcd::Node>> LeaderContenderProcess::repair()
 {
   // We "repair" the future by just returning None as that will
   // cause the contending loop to continue.
