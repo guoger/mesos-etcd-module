@@ -176,6 +176,7 @@ Future<Nothing> LeaderContenderProcess::__contend(
 Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
 {
   return client.create(data, ttl, true, node.modifiedIndex)
+    .repair(defer(self(), &Self::repair, node))
     .then(defer(self(), &Self::__contend, lambda::_1));
 }
 
