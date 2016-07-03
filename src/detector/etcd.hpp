@@ -37,7 +37,9 @@ class EtcdMasterDetector : public MasterDetector
 public:
   // Creates a detector which uses etcd to determine (i.e., elect) a
   // leading master.
-  explicit EtcdMasterDetector(const etcd::URL& url);
+  explicit EtcdMasterDetector(const etcd::URL& url,
+                              const uint8_t& retry_times,
+                              const Duration& retry_interval);
 
   virtual ~EtcdMasterDetector();
 

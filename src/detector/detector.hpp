@@ -35,7 +35,9 @@ class LeaderDetectorProcess;
 class LeaderDetector
 {
 public:
-  LeaderDetector(const URL& url);
+  LeaderDetector(const URL& url,
+                 const uint8_t& retry_times,
+                 const Duration& retry_interval);
 
   virtual ~LeaderDetector();
 

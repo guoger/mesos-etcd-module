@@ -38,11 +38,13 @@ class EtcdClientProcess;
 class EtcdClient
 {
 public:
-  EtcdClient(const URL& url, const Option<Duration>& defaultTTL = None());
+  EtcdClient(const URL& url,
+             const uint8_t& retry_times,
+             const Duration& retry_interval);
 
   process::Future<Option<Node>> create(
     const std::string& value,
-    const Option<Duration>& ttl = None(),
+    const Duration& ttl,
     const Option<bool> prevExist = None(),
     const Option<uint64_t>& prevIndex = None(),
     const Option<std::string>& prevValue = None());

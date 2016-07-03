@@ -37,7 +37,11 @@ class LeaderContenderProcess;
 class LeaderContender
 {
 public:
-  LeaderContender(const URL& url, const std::string& data, const Duration& ttl);
+  LeaderContender(const URL& url,
+                  const std::string& data,
+                  const uint8_t& retry_times,
+                  const Duration& retry_interval,
+                  const Duration& ttl);
 
   virtual ~LeaderContender();
 

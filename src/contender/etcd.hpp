@@ -29,15 +29,16 @@ using namespace mesos::master::contender;
 namespace etcd {
 namespace contender {
 
-const Duration DEFAULT_ETCD_TTL = Seconds(5);
-
 // Forward declarations.
 class EtcdMasterContenderProcess;
 
 class EtcdMasterContender : public MasterContender
 {
 public:
-  explicit EtcdMasterContender(const etcd::URL& url);
+  explicit EtcdMasterContender(const etcd::URL& url,
+                               const uint8_t& retry_times,
+                               const Duration& retry_interval,
+                               const Duration& ttl);
   virtual ~EtcdMasterContender();
   virtual void initialize(const MasterInfo& masterInfo);
   virtual process::Future<process::Future<Nothing>> contend();

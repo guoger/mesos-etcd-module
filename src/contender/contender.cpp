@@ -46,6 +46,8 @@ class LeaderContenderProcess : public Process<LeaderContenderProcess>
 public:
   LeaderContenderProcess(const URL& url,
                          const string& data,
+                         const uint8_t& retry_times,
+                         const Duration& retry_interval,
                          const Duration& ttl);
 
   virtual ~LeaderContenderProcess();
@@ -58,8 +60,8 @@ protected:
 
 private:
   etcd::EtcdClient client;
+  const Duration ttl;
   string data;
-  Duration ttl;
 
   // Continuations.
   Future<Nothing> _contend(const Option<etcd::Node>& node);
@@ -76,8 +78,12 @@ private:
 
 LeaderContenderProcess::LeaderContenderProcess(const URL& _url,
                                                const string& _data,
+                                               const uint8_t& _retry_times,
+                                               const Duration& _retry_interval,
                                                const Duration& _ttl)
-  : client(_url), data(_data), ttl(_ttl)
+  : client(_url, _retry_times, _retry_interval),
+    data(_data),
+    ttl(_ttl)
 {
 }
 
@@ -176,6 +182,7 @@ Future<Nothing> LeaderContenderProcess::__contend(
 Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
 {
   return client.create(data, ttl, true, node.modifiedIndex)
+    .repair(defer(self(), &Self::repair, node))
     .then(defer(self(), &Self::__contend, lambda::_1));
 }
 
@@ -191,9 +198,15 @@ Future<Option<etcd::Node>> LeaderContenderProcess::repair(
 
 LeaderContender::LeaderContender(const etcd::URL& url,
                                  const string& data,
+                                 const uint8_t& retry_times,
+                                 const Duration& retry_interval,
                                  const Duration& ttl)
 {
-  process = new LeaderContenderProcess(url, data, ttl);
+  process = new LeaderContenderProcess(url,
+                                       data,
+                                       retry_times,
+                                       retry_interval,
+                                       ttl);
   spawn(process);
 }
 

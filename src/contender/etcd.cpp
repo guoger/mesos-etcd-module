@@ -43,7 +43,15 @@ namespace contender {
 class EtcdMasterContenderProcess : public Process<EtcdMasterContenderProcess>
 {
 public:
-  EtcdMasterContenderProcess(const etcd::URL& _url) : contender(NULL), url(_url)
+  EtcdMasterContenderProcess(const etcd::URL& _url,
+                             const uint8_t& _retry_times,
+                             const Duration& _retry_interval,
+                             const Duration& _ttl)
+    : contender(NULL),
+      url(_url),
+      retry_times(_retry_times),
+      retry_interval(_retry_interval),
+      ttl(_ttl)
   {
   }
 
@@ -64,13 +72,22 @@ private:
   LeaderContender* contender;
 
   const etcd::URL url;
+  const uint8_t retry_times;
+  const Duration retry_interval;
+  const Duration ttl;
   Option<MasterInfo> masterInfo;
 };
 
 
-EtcdMasterContender::EtcdMasterContender(const etcd::URL& url)
+EtcdMasterContender::EtcdMasterContender(const etcd::URL& url,
+                                         const uint8_t& retry_times,
+                                         const Duration& retry_interval,
+                                         const Duration& ttl)
 {
-  process = new EtcdMasterContenderProcess(url);
+  process = new EtcdMasterContenderProcess(url,
+                                           retry_times,
+                                           retry_interval,
+                                           ttl);
   spawn(process);
 }
 
@@ -116,7 +133,11 @@ Future<Future<Nothing>> EtcdMasterContenderProcess::contend()
   // Serialize the MasterInfo to JSON.
   JSON::Object json = JSON::protobuf(masterInfo.get());
 
-  contender = new etcd::contender::LeaderContender(url, stringify(json), DEFAULT_ETCD_TTL);
+  contender = new etcd::contender::LeaderContender(url,
+                                                   stringify(json),
+                                                   retry_times,
+                                                   retry_interval,
+                                                   ttl);
   return contender->contend();
 }
 

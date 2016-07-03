@@ -45,8 +45,10 @@ namespace detector {
 class EtcdMasterDetectorProcess : public Process<EtcdMasterDetectorProcess>
 {
 public:
-  explicit EtcdMasterDetectorProcess(const etcd::URL& _url)
-    : detector(_url), url(_url)
+  explicit EtcdMasterDetectorProcess(const etcd::URL& _url,
+                                     const uint8_t& retry_times,
+                                     const Duration& retry_interval)
+    : detector(_url, retry_times, retry_interval), url(_url)
   {
   }
 
@@ -109,9 +111,11 @@ Future<Option<MasterInfo>> EtcdMasterDetectorProcess::detected(
 }
 
 
-EtcdMasterDetector::EtcdMasterDetector(const etcd::URL& url)
+EtcdMasterDetector::EtcdMasterDetector(const etcd::URL& url,
+                                       const uint8_t& retry_times,
+                                       const Duration& retry_interval)
 {
-  process = new EtcdMasterDetectorProcess(url);
+  process = new EtcdMasterDetectorProcess(url, retry_times, retry_interval);
   spawn(process);
 }
 

@@ -35,12 +35,28 @@ using namespace mesos::master::detector;
 static MasterContender* createContender(const Parameters& parameters)
 {
   Option<std::string> urls;
+  Option<std::string> retry_interval;
+  Option<std::string> retry_times;
+  Option<std::string> ttl;
   foreach (const Parameter& parameter, parameters.parameter()) {
     if (parameter.key() == "url") {
       urls = parameter.value();
     }
+
+    if (parameter.key() == "retry_interval") {
+      retry_interval = parameter.value();
+    }
+
+    if (parameter.key() == "retry_times") {
+      retry_times = parameter.value();
+    }
+
+    if (parameter.key() == "ttl") {
+      ttl = parameter.value();
+    }
   }
 
+  // Try to parse urls from parameters.
   if (urls.isNone()) {
     LOG(ERROR) << "No etcd URLs provided";
     return NULL;
@@ -53,7 +69,55 @@ static MasterContender* createContender(const Parameters& parameters)
     return NULL;
   }
 
-  return new etcd::contender::EtcdMasterContender(urls_.get());
+  // Try to parse retry times from parameters.
+  uint8_t retry_times__;
+  if (retry_times.isNone()) {
+    LOG(WARNING) << "No retry times provided, using default value 3";
+    retry_times__ = 3;
+  } else {
+    Try<uint8_t> retry_times_ = numify<uint8_t>(retry_times.get());
+    if (retry_times_.isError()) {
+      LOG(ERROR) << "Parameter '" << retry_times.get()
+                 << "' could not be parsed into a valid uint8_t: "
+                 << retry_times_.error();
+      return NULL;
+    }
+  }
+
+  // Try to parse retry interval from parameters.
+  Duration retry_interval__;
+  if (retry_interval.isNone()) {
+    LOG(WARNING) << "No retry interval provided, using default value 3sec";
+    retry_interval__ = Seconds(3);
+  } else {
+    Try<Duration> retry_interval_ = Duration::parse(retry_interval.get());
+    if (retry_interval_.isError()) {
+      LOG(ERROR) << "Parameter '" << retry_interval.get()
+                 << "' could not be parsed into a valid Duration: "
+                 << retry_interval_.error();
+      return NULL;
+    }
+  }
+
+  // Try to parse retry interval from parameters.
+  Duration ttl__;
+  if (ttl.isNone()) {
+    LOG(WARNING) << "No retry TTL provided, using default value 5sec";
+    ttl__ = Seconds(5);
+  } else {
+    Try<Duration> ttl_ = Duration::parse(ttl.get());
+    if (ttl_.isError()) {
+      LOG(ERROR) << "Parameter '" << ttl.get()
+                 << "' could not be parsed into a valid Duration: "
+                 << ttl_.error();
+      return NULL;
+    }
+  }
+
+  return new etcd::contender::EtcdMasterContender(urls_.get(),
+                                                  retry_times__,
+                                                  retry_interval__,
+                                                  ttl__);
 }
 
 
@@ -72,9 +136,19 @@ mesos::modules::Module<MasterContender> org_apache_mesos_EtcdMasterContender(
 static MasterDetector* createDetector(const Parameters& parameters)
 {
   Option<std::string> urls;
+  Option<std::string> retry_interval;
+  Option<std::string> retry_times;
   foreach (const Parameter& parameter, parameters.parameter()) {
     if (parameter.key() == "url") {
       urls = parameter.value();
+    }
+
+    if (parameter.key() == "retry_interval") {
+      retry_interval = parameter.value();
+    }
+
+    if (parameter.key() == "retry_times") {
+      retry_times = parameter.value();
     }
   }
 
@@ -90,7 +164,39 @@ static MasterDetector* createDetector(const Parameters& parameters)
     return NULL;
   }
 
-  return new etcd::detector::EtcdMasterDetector(urls_.get());
+  // Try to parse retry times from parameters.
+  uint8_t retry_times__;
+  if (retry_times.isNone()) {
+    LOG(WARNING) << "No retry times provided, using default value 3";
+    retry_times__ = 3;
+  } else {
+    Try<uint8_t> retry_times_ = numify<uint8_t>(retry_times.get());
+    if (retry_times_.isError()) {
+      LOG(ERROR) << "Parameter '" << retry_times.get()
+                 << "' could not be parsed into a valid uint8_t: "
+                 << retry_times_.error();
+      return NULL;
+    }
+  }
+
+  // Try to parse retry interval from parameters.
+  Duration retry_interval__;
+  if (retry_interval.isNone()) {
+    LOG(WARNING) << "No retry interval provided, using default value 3sec";
+    retry_interval__ = Seconds(3);
+  } else {
+    Try<Duration> retry_interval_ = Duration::parse(retry_interval.get());
+    if (retry_interval_.isError()) {
+      LOG(ERROR) << "Parameter '" << retry_interval.get()
+                 << "' could not be parsed into a valid Duration: "
+                 << retry_interval_.error();
+      return NULL;
+    }
+  }
+
+  return new etcd::detector::EtcdMasterDetector(urls_.get(),
+                                                retry_times__,
+                                                retry_interval__);
 }
 
 

@@ -253,13 +253,17 @@ Failure failure(const Response& response)
 class EtcdClientProcess : public Process<EtcdClientProcess>
 {
 public:
-  EtcdClientProcess(const URL& _url, const Option<Duration>& _defaultTTL)
-    : etcdURL(_url), defaultTTL(_defaultTTL)
+  EtcdClientProcess(const URL& _url,
+                    const uint8_t& _retry_times,
+                    const Duration& _retry_interval)
+    : etcdURL(_url),
+      retry_times(_retry_times),
+      retry_interval(_retry_interval)
   {
   }
 
   Future<Option<Node>> create(const string& value,
-                              const Option<Duration>& ttl,
+                              const Duration& ttl,
                               const Option<bool> prevExist,
                               const Option<uint64_t>& prevIndex,
                               const Option<string>& prevValue);
@@ -271,23 +275,30 @@ public:
 
 private:
   // Forward declarations of continuations.
-  Future<Option<Node>> _create(vector<http::URL> urls, uint32_t index);
+  Future<Option<Node>> _create(vector<http::URL> urls,
+                               uint32_t index,
+                               uint8_t retry);
   Future<Option<Node>> __create(const Response& response);
 
-  Future<Option<Node>> _get(vector<http::URL> urls, uint32_t index);
+  Future<Option<Node>> _get(vector<http::URL> urls,
+                            uint32_t index,
+                            uint8_t retry);
   Future<Option<Node>> __get(const Response& response);
 
-  Future<Option<Node>> _watch(vector<http::URL> urls, uint32_t index);
+  Future<Option<Node>> _watch(vector<http::URL> urls,
+                              uint32_t index,
+                              uint8_t retry);
   Future<Option<Node>> __watch(const Response& response);
 
   URL etcdURL;
-  Option<Duration> defaultTTL;
+  const uint8_t retry_times;
+  const Duration retry_interval;
 };
 
 
 Future<Option<Node>> EtcdClientProcess::create(
   const string& value,
-  const Option<Duration>& ttl,
+  const Duration& ttl,
   const Option<bool> prevExist,
   const Option<uint64_t>& prevIndex,
   const Option<string>& prevValue)
@@ -301,12 +312,10 @@ Future<Option<Node>> EtcdClientProcess::create(
 
     url.query["value"] = value;
 
-    if (ttl.isSome()) {
-      // Because etcd expects TTLs as integer seconds we need cast the
-      // double we get back from Duration::secs() to an integer before
-      // we turn it into a string.
-      url.query["ttl"] = stringify(uint64_t(ttl.get().secs()));
-    }
+    // Because etcd expects TTLs as integer seconds we need cast the
+    // double we get back from Duration::secs() to an integer before
+    // we turn it into a string.
+    url.query["ttl"] = stringify(uint64_t(ttl.secs()));
 
     if (prevExist.isSome()) {
       url.query["prevExist"] = stringify(prevExist.get());
@@ -330,19 +339,25 @@ Future<Option<Node>> EtcdClientProcess::create(
   // the entire etcd::URL but instead just took the necessary
   // parameters (like, 'key', 'value', etc).
 
-  return _create(urls, 0);
+  return _create(urls, 0, 0);
 }
 
 
 Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
-                                                uint32_t index)
+                                                uint32_t index,
+                                                uint8_t retry)
 {
-  // If all urls has been tried for a round, wait for several seconds
-  // before trying again.
+  // If all urls has been tried for a round and we haven't reached
+  // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
+    if (retry >= retry_times) {
+      return Failure("Etcd clustser unreachable");
+    }
+
     Promise<Option<Node>>* promise = new Promise<Option<Node>>();
     return promise->future().after(
-      Seconds(10), defer(self(), &EtcdClientProcess::_create, urls, 0));
+      retry_interval,
+      defer(self(), &EtcdClientProcess::_create, urls, 0, retry + 1));
   }
 
   http::URL url = urls[index];
@@ -351,7 +366,7 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
   return http::request(http::createRequest(url, "PUT"))
     .then(lambda::bind(&parse, lambda::_1))
     .then(defer(self(), &EtcdClientProcess::__create, lambda::_1))
-    .repair(defer(self(), &EtcdClientProcess::_create, urls, index + 1));
+    .repair(defer(self(), &EtcdClientProcess::_create, urls, index + 1, retry));
 }
 
 
@@ -391,19 +406,25 @@ Future<Option<Node>> EtcdClientProcess::get()
 
   // TODO(benh): See TODO in 'create' for randomizing ordering of URLs.
 
-  return _get(urls, 0);
+  return _get(urls, 0, 0);
 }
 
 
 Future<Option<Node>> EtcdClientProcess::_get(vector<http::URL> urls,
-                                             uint32_t index)
+                                             uint32_t index,
+                                             uint8_t retry)
 {
-  // If all urls has been tried for a round, wait for several seconds
-  // before trying again.
+  // If all urls has been tried for a round and we haven't reached
+  // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
+    if (retry >= retry_times) {
+      return Failure("Etcd clustser unreachable");
+    }
+
     Promise<Option<Node>>* promise = new Promise<Option<Node>>();
     return promise->future().after(
-      Seconds(10), defer(self(), &EtcdClientProcess::_get, urls, 0));
+      retry_interval,
+      defer(self(), &EtcdClientProcess::_get, urls, 0, retry + 1));
   }
 
   http::URL url = urls[index];
@@ -412,7 +433,7 @@ Future<Option<Node>> EtcdClientProcess::_get(vector<http::URL> urls,
   return http::get(url)
     .then(lambda::bind(&parse, lambda::_1))
     .then(defer(self(), &EtcdClientProcess::__get, lambda::_1))
-    .repair(defer(self(), &EtcdClientProcess::_get, urls, index + 1));
+    .repair(defer(self(), &EtcdClientProcess::_get, urls, index + 1, retry));
 }
 
 
@@ -457,19 +478,25 @@ Future<Option<Node>> EtcdClientProcess::watch(const Option<uint64_t>& waitIndex)
 
   // TODO(benh): See TODO in 'create' for randomizing ordering of URLs.
 
-  return _watch(urls, 0);
+  return _watch(urls, 0, 0);
 }
 
 
 Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
-                                               uint32_t index)
+                                               uint32_t index,
+                                               uint8_t retry)
 {
-  // If all urls has been tried for a round, wait for several seconds
-  // before trying again.
+  // If all urls has been tried for a round and we haven't reached
+  // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
+    if (retry >= retry_times) {
+      return Failure("Etcd clustser unreachable");
+    }
+
     Promise<Option<Node>>* promise = new Promise<Option<Node>>();
     return promise->future().after(
-      Seconds(10), defer(self(), &EtcdClientProcess::_watch, urls, 0));
+      retry_interval,
+      defer(self(), &EtcdClientProcess::_watch, urls, 0, retry + 1));
   }
 
   http::URL url = urls[index];
@@ -478,7 +505,7 @@ Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
   return http::get(url)
     .then(lambda::bind(&parse, lambda::_1))
     .then(defer(self(), &EtcdClientProcess::__watch, lambda::_1))
-    .repair(defer(self(), &EtcdClientProcess::_watch, urls, index + 1));
+    .repair(defer(self(), &EtcdClientProcess::_watch, urls, index + 1, retry));
 }
 
 
@@ -504,22 +531,29 @@ Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
 }
 
 
-EtcdClient::EtcdClient(const URL& url, const Option<Duration>& defaultTTL)
+EtcdClient::EtcdClient(const URL& url,
+                       const uint8_t& retry_times,
+                       const Duration& retry_interval)
 {
-  process = new EtcdClientProcess(url, defaultTTL);
+  process = new EtcdClientProcess(url, retry_times, retry_interval);
   spawn(process);
 }
 
 
 process::Future<Option<Node>> EtcdClient::create(
   const std::string& value,
-  const Option<Duration>& ttl,
+  const Duration& ttl,
   const Option<bool> prevExist,
   const Option<uint64_t>& prevIndex,
   const Option<std::string>& prevValue)
 {
-  return dispatch(process, &EtcdClientProcess::create, value, ttl, prevExist,
-                  prevIndex, prevValue);
+  return dispatch(process,
+                  &EtcdClientProcess::create,
+                  value,
+                  ttl,
+                  prevExist,
+                  prevIndex,
+                  prevValue);
 }
 
 

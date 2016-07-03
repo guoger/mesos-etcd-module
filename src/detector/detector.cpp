@@ -43,7 +43,9 @@ namespace etcd {
 class LeaderDetectorProcess : public Process<LeaderDetectorProcess>
 {
 public:
-  LeaderDetectorProcess(const URL& url);
+  LeaderDetectorProcess(const URL& url,
+                        const uint8_t& retry_times,
+                        const Duration& retry_interval);
 
   virtual ~LeaderDetectorProcess();
 
@@ -63,8 +65,10 @@ private:
 };
 
 
-LeaderDetectorProcess::LeaderDetectorProcess(const URL& url)
-  : client(url)
+LeaderDetectorProcess::LeaderDetectorProcess(const URL& url,
+                                             const uint8_t& retry_times,
+                                             const Duration& retry_interval)
+  : client(url, retry_times, retry_interval)
 {
 }
 
@@ -125,9 +129,11 @@ Future<Option<etcd::Node>> LeaderDetectorProcess::repair(
 }
 
 
-LeaderDetector::LeaderDetector(const URL& url)
+LeaderDetector::LeaderDetector(const URL& url,
+                               const uint8_t& retry_times,
+                               const Duration& retry_interval)
 {
-  process = new LeaderDetectorProcess(url);
+  process = new LeaderDetectorProcess(url, retry_times, retry_interval);
   spawn(process);
 }
 
