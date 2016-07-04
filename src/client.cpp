@@ -41,6 +41,9 @@ using std::vector;
 
 namespace etcd {
 
+const uint32_t MAX_RETRY_TIMES = 3;
+const Duration RETRY_INTERVAL = Seconds(5);
+
 Try<Node*> Node::parse(const JSON::Object& object)
 {
   Owned<Node> node(new Node);
@@ -271,7 +274,9 @@ public:
 
 private:
   // Forward declarations of continuations.
-  Future<Option<Node>> _create(vector<http::URL> urls, uint32_t index);
+  Future<Option<Node>> _create(vector<http::URL> urls,
+                               uint32_t index,
+                               uint32_t retry);
   Future<Option<Node>> __create(const Response& response);
 
   Future<Option<Node>> _get(vector<http::URL> urls, uint32_t index);
@@ -330,19 +335,25 @@ Future<Option<Node>> EtcdClientProcess::create(
   // the entire etcd::URL but instead just took the necessary
   // parameters (like, 'key', 'value', etc).
 
-  return _create(urls, 0);
+  return _create(urls, 0, 0);
 }
 
 
 Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
-                                                uint32_t index)
+                                                uint32_t index,
+                                                uint32_t retry)
 {
-  // If all urls has been tried for a round, wait for several seconds
-  // before trying again.
+  // If all urls has been tried for a round, wait for 'retry_interval' seconds
+  // before trying again. If it has been retried for 'retry_times' times,
+  // failure is reported.
   if (index >= urls.size()) {
+    if (retry >= MAX_RETRY_TIMES) {
+      return Failure("Etcd cluster not reachable.");
+    }
     Promise<Option<Node>>* promise = new Promise<Option<Node>>();
     return promise->future().after(
-      Seconds(10), defer(self(), &EtcdClientProcess::_create, urls, 0));
+      RETRY_INTERVAL,
+      defer(self(), &EtcdClientProcess::_create, urls, 0, retry + 1));
   }
 
   http::URL url = urls[index];
@@ -351,7 +362,7 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
   return http::request(http::createRequest(url, "PUT"))
     .then(lambda::bind(&parse, lambda::_1))
     .then(defer(self(), &EtcdClientProcess::__create, lambda::_1))
-    .repair(defer(self(), &EtcdClientProcess::_create, urls, index + 1));
+    .repair(defer(self(), &EtcdClientProcess::_create, urls, index + 1, retry));
 }
 
 
