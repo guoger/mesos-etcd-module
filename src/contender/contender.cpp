@@ -110,6 +110,7 @@ Future<Future<Nothing>> LeaderContenderProcess::contend()
 
 Future<Nothing> LeaderContenderProcess::_contend(const Option<etcd::Node>& node)
 {
+  std::cout << "LeaderContenderProcess::_contend" << std::endl;
   if (node.isNone()) {
     return client.create(data, ttl, false)
       .then(defer(self(), &Self::__contend, lambda::_1));
@@ -146,6 +147,7 @@ Future<Nothing> LeaderContenderProcess::_contend(const Option<etcd::Node>& node)
 Future<Nothing> LeaderContenderProcess::__contend(
   const Option<etcd::Node>& node)
 {
+  std::cout << "LeaderContenderProcess::__contend" << std::endl;
   if (node.isNone()) {
     // Looks like we we're able to create (or update) the node before
     // someone else (or our TTL elapsed), either way we are not
@@ -181,6 +183,7 @@ Future<Nothing> LeaderContenderProcess::__contend(
 
 Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
 {
+  std::cout << "LeaderContenderProcess::___contend" << std::endl;
   return client.create(data, ttl, true, node.modifiedIndex)
     .repair(defer(self(), &Self::repair, node))
     .then(defer(self(), &Self::__contend, lambda::_1));

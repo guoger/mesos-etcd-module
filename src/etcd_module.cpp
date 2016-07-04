@@ -45,6 +45,7 @@ static MasterContender* createContender(const Parameters& parameters)
 
     if (parameter.key() == "retry_interval") {
       retry_interval = parameter.value();
+      std::cout << "Parameter retry_interval: " << retry_interval.get() << std::endl;
     }
 
     if (parameter.key() == "retry_times") {

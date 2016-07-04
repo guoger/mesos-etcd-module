@@ -347,6 +347,7 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
                                                 uint32_t index,
                                                 uint8_t retry)
 {
+  std::cout << "EtcdClientProcess::_create" << std::endl;
   // If all urls has been tried for a round and we haven't reached
   // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
@@ -372,6 +373,7 @@ Future<Option<Node>> EtcdClientProcess::_create(vector<http::URL> urls,
 
 Future<Option<Node>> EtcdClientProcess::__create(const Response& response)
 {
+  std::cout << "EtcdClientProcess::__create" << std::endl;
   if (response.errorCode.isSome()) {
     // If the key already exists, or had the wrong value we return
     // None rather than error.
@@ -414,6 +416,7 @@ Future<Option<Node>> EtcdClientProcess::_get(vector<http::URL> urls,
                                              uint32_t index,
                                              uint8_t retry)
 {
+  std::cout << "EtcdClientProcess::_get" << std::endl;
   // If all urls has been tried for a round and we haven't reached
   // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
@@ -439,6 +442,7 @@ Future<Option<Node>> EtcdClientProcess::_get(vector<http::URL> urls,
 
 Future<Option<Node>> EtcdClientProcess::__get(const Response& response)
 {
+  std::cout << "EtcdClientProcess::__get" << std::endl;
   // If this key is just missing then return none, otherwise return a
   // Failure and attempt to provide the 'message'.
   if (response.errorCode.isSome()) {
@@ -486,13 +490,17 @@ Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
                                                uint32_t index,
                                                uint8_t retry)
 {
+  std::cout << "EtcdClientProcess::_watch" << std::endl;
   // If all urls has been tried for a round and we haven't reached
   // 'retry_times' limit, wait for 'retry_interval' seconds before trying again.
   if (index >= urls.size()) {
     if (retry >= retry_times) {
-      return Failure("Etcd clustser unreachable");
+      std::cout << "Tried for " << retry << " times." << std::endl;
+      return Failure("Etcd clustser unreachable.");
     }
 
+    std::cout << "Tried every etcd node, retry in " << retry_interval.secs()
+              << " seconds." << std::endl;
     Promise<Option<Node>>* promise = new Promise<Option<Node>>();
     return promise->future().after(
       retry_interval,
@@ -511,6 +519,7 @@ Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
 
 Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
 {
+  std::cout << "EtcdClientProcess::__watch" << std::endl;
   if (response.errorCode.isSome()) {
     return failure(response);
   }

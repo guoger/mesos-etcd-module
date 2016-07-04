@@ -81,6 +81,7 @@ LeaderDetectorProcess::~LeaderDetectorProcess()
 Future<Option<string>> LeaderDetectorProcess::_detect(
   const Option<string>& previous, const Option<etcd::Node>& node)
 {
+  std::cout << "LeaderDetectorProcess::_detect" << std::endl;
   // Check and see if the node still exists.
   if (node.isNone() && previous.isSome()) {
     return None();
