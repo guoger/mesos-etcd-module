@@ -83,6 +83,7 @@ static MasterContender* createContender(const Parameters& parameters)
                  << retry_times_.error();
       return NULL;
     }
+    retry_times__ = retry_times_.get();
   }
 
   // Try to parse retry interval from parameters.
@@ -98,6 +99,7 @@ static MasterContender* createContender(const Parameters& parameters)
                  << retry_interval_.error();
       return NULL;
     }
+    retry_interval__ = retry_interval_.get();
   }
 
   // Try to parse retry interval from parameters.
@@ -113,6 +115,7 @@ static MasterContender* createContender(const Parameters& parameters)
                  << ttl_.error();
       return NULL;
     }
+    ttl__ = ttl_.get();
   }
 
   return new etcd::contender::EtcdMasterContender(urls_.get(),

@@ -47,7 +47,7 @@ public:
                              const uint8_t& _retry_times,
                              const Duration& _retry_interval,
                              const Duration& _ttl)
-    : contender(NULL),
+    : contender(nullptr),
       url(_url),
       retry_times(_retry_times),
       retry_interval(_retry_interval),
