@@ -41,8 +41,8 @@ using std::vector;
 
 namespace etcd {
 
-const uint32_t MAX_RETRY_TIMES = 3;
-const Duration RETRY_INTERVAL = Seconds(5);
+const uint32_t MAX_RETRY_TIMES = 2;
+const Duration RETRY_INTERVAL = Seconds(4);
 
 Try<Node*> Node::parse(const JSON::Object& object)
 {
