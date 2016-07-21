@@ -7,14 +7,26 @@ Etcd v3.0.3
 # How-To
 ## Linux
 ### Step 1. Build Mesos
-Replicated log in Mesos is still coupled with Zookeeper. The work to modularize this part is still undergoing. For now, please clone Mesos from [this branch](https://github.com/guoger/mesos/tree/replicated-log-etcd).
+Clone Mesos and checkout 1.0.0-rc2 branch.
+```
+git clone https://github.com/apache/mesos.git
+git checkout 1.0.0-rc2
+```
+
+Clone this repo (you should be on `1.0.0-rc2` branch by default):
+```
+git clone https://github.com/guoger/mesos-etcd-module.git
+```
+
+Copy files under directory `patch-on-1.0.x` into Mesos code tree under corresponding positions.
+
 Refer to [Mesos getting started](http://mesos.apache.org/gettingstarted/) for instructions to build Mesos.
 
-Supply `--enable-install-module-dependencies` to `configure`. This installs 3rdparty libraries that modules depend on. If you don't want system-wide Mesos installation, supply `--prefix=/path/to/install/location` as well. `make install` when compilation is finished.
+*Node:* Supply `--enable-install-module-dependencies` to `configure`. This installs 3rdparty libraries that modules depend on. If you don't want system-wide Mesos installation, supply `--prefix=/path/to/install/location` as well. `make install` when compilation is finished.
 
 ### Step 2. Build Mesos contender and detector module
 ```
-git clone https://github.com/guoger/mesos-etcd-module.git && cd mesos-etcd-module
+cd mesos-etcd-module
 ./bootstrap
 mkdir build && cd build
 ../configure --with-mesos=$MESOS_INSTALL CXXFLAGS="-I$MESOS_INSTALL/include -I$MESOS_INSTALL/lib/mesos/3rdparty/include -I$MESOS_INSTALL/lib/mesos/3rdparty/usr/local/include"
