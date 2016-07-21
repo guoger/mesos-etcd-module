@@ -24,7 +24,7 @@
 #include <stout/nothing.hpp>
 #include <stout/option.hpp>
 
-#include "client.hpp"
+#include <mesos/etcd/client.hpp>
 
 namespace etcd {
 namespace contender {

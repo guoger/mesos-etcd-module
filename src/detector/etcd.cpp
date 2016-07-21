@@ -30,8 +30,8 @@
 #include <stout/lambda.hpp>
 #include <stout/protobuf.hpp>
 
-#include "etcd.hpp"
 #include "detector.hpp"
+#include "etcd.hpp"
 
 using namespace mesos;
 using namespace process;

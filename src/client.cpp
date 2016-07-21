@@ -32,7 +32,7 @@
 #include <stout/stringify.hpp>
 #include <stout/try.hpp>
 
-#include "client.hpp"
+#include <mesos/etcd/client.hpp>
 
 using namespace process;
 
@@ -261,7 +261,7 @@ public:
   {
   }
 
-  Future<Option<Node>> create(const string& value,
+  Future<Option<Node>> create(const Option<string>& value,
                               const Option<Duration>& ttl,
                               const Option<bool> prevExist,
                               const Option<uint64_t>& prevIndex,
@@ -291,7 +291,7 @@ private:
 
 
 Future<Option<Node>> EtcdClientProcess::create(
-  const string& value,
+  const Option<string>& value,
   const Option<Duration>& ttl,
   const Option<bool> prevExist,
   const Option<uint64_t>& prevIndex,
@@ -304,7 +304,7 @@ Future<Option<Node>> EtcdClientProcess::create(
     // TODO(benh): Use HTTPS after supported in libprocess.
     http::URL url("http", server.host, server.port, etcdURL.path);
 
-    url.query["value"] = value;
+    url.query["value"] = value.get();
 
     if (ttl.isSome()) {
       // Because etcd expects TTLs as integer seconds we need cast the
@@ -523,11 +523,13 @@ EtcdClient::EtcdClient(const URL& url, const Option<Duration>& defaultTTL)
 
 
 process::Future<Option<Node>> EtcdClient::create(
-  const std::string& value,
-  const Option<Duration>& ttl,
-  const Option<bool> prevExist,
-  const Option<uint64_t>& prevIndex,
-  const Option<std::string>& prevValue)
+    const Option<std::string>& key,
+    const Option<std::string>& value,
+    const Option<Duration>& ttl,
+    const Option<bool> prevExist,
+    const Option<uint64_t>& prevIndex,
+    const Option<std::string>& prevValue,
+    const Option<bool> refresh)
 {
   return dispatch(process, &EtcdClientProcess::create, value, ttl, prevExist,
                   prevIndex, prevValue);
@@ -541,7 +543,9 @@ process::Future<Option<Node>> EtcdClient::get()
 
 
 process::Future<Option<Node>> EtcdClient::watch(
-  const Option<uint64_t>& waitIndex)
+  const Option<uint64_t>& waitIndex,
+  const Option<std::string>& key,
+  const Option<bool> recursive)
 {
   return dispatch(process, &EtcdClientProcess::watch, waitIndex);
 }

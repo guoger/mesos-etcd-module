@@ -30,9 +30,6 @@
 #include "contender/contender.hpp"
 #include "contender/etcd.hpp"
 
-#include "client.hpp"
-#include "url.hpp"
-
 using namespace process;
 
 using std::set;
@@ -105,7 +102,7 @@ Future<Future<Nothing>> LeaderContenderProcess::contend()
 Future<Nothing> LeaderContenderProcess::_contend(const Option<etcd::Node>& node)
 {
   if (node.isNone()) {
-    return client.create(data, ttl, false)
+    return client.create(None(), data, ttl, false)
       .then(defer(self(), &Self::__contend, lambda::_1));
   }
 
@@ -175,7 +172,7 @@ Future<Nothing> LeaderContenderProcess::__contend(
 
 Future<Nothing> LeaderContenderProcess::___contend(const etcd::Node& node)
 {
-  return client.create(data, ttl, true, node.modifiedIndex)
+  return client.create(None(), data, ttl, true, node.modifiedIndex)
     .then(defer(self(), &Self::__contend, lambda::_1));
 }
 

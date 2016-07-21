@@ -30,9 +30,6 @@
 #include "detector/detector.hpp"
 #include "detector/etcd.hpp"
 
-#include "client.hpp"
-#include "url.hpp"
-
 using namespace process;
 
 using std::set;

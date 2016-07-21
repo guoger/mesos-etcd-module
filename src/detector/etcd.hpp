@@ -21,7 +21,7 @@
 
 #include <mesos/master/detector.hpp>
 
-#include "url.hpp"
+#include <mesos/etcd/url.hpp>
 
 using namespace mesos;
 using namespace mesos::master::detector;

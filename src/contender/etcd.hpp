@@ -20,8 +20,7 @@
 //#include <mesos/mesos.hpp>
 
 #include <mesos/master/contender.hpp>
-
-#include "url.hpp"
+#include <mesos/etcd/url.hpp>
 
 using namespace mesos;
 using namespace mesos::master::contender;
