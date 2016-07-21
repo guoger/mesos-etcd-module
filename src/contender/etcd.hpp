@@ -28,7 +28,7 @@ using namespace mesos::master::contender;
 namespace etcd {
 namespace contender {
 
-const Duration DEFAULT_ETCD_TTL = Seconds(5);
+const Duration DEFAULT_ETCD_TTL = Seconds(10);
 
 // Forward declarations.
 class EtcdMasterContenderProcess;
