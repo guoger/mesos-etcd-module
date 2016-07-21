@@ -1052,14 +1052,11 @@ MESOS_LINUX_FILES =							\
   linux/perf.cpp							\
   linux/systemd.cpp							\
   slave/containerizer/mesos/linux_launcher.cpp				\
-  slave/containerizer/mesos/isolators/appc/runtime.cpp			\
-  slave/containerizer/mesos/isolators/cgroups/cgroups.cpp		\
   slave/containerizer/mesos/isolators/cgroups/cpushare.cpp		\
   slave/containerizer/mesos/isolators/cgroups/devices.cpp		\
   slave/containerizer/mesos/isolators/cgroups/mem.cpp			\
   slave/containerizer/mesos/isolators/cgroups/net_cls.cpp		\
   slave/containerizer/mesos/isolators/cgroups/perf_event.cpp		\
-  slave/containerizer/mesos/isolators/cgroups/subsystem.cpp		\
   slave/containerizer/mesos/isolators/docker/runtime.cpp		\
   slave/containerizer/mesos/isolators/docker/volume/isolator.cpp	\
   slave/containerizer/mesos/isolators/filesystem/linux.cpp		\
@@ -1083,15 +1080,12 @@ MESOS_LINUX_FILES +=							\
   linux/sched.hpp							\
   linux/systemd.hpp							\
   slave/containerizer/mesos/linux_launcher.hpp				\
-  slave/containerizer/mesos/isolators/appc/runtime.hpp			\
-  slave/containerizer/mesos/isolators/cgroups/cgroups.hpp		\
   slave/containerizer/mesos/isolators/cgroups/constants.hpp		\
   slave/containerizer/mesos/isolators/cgroups/cpushare.hpp		\
   slave/containerizer/mesos/isolators/cgroups/devices.hpp		\
   slave/containerizer/mesos/isolators/cgroups/mem.hpp			\
   slave/containerizer/mesos/isolators/cgroups/net_cls.hpp		\
   slave/containerizer/mesos/isolators/cgroups/perf_event.hpp		\
-  slave/containerizer/mesos/isolators/cgroups/subsystem.hpp		\
   slave/containerizer/mesos/isolators/docker/runtime.hpp		\
   slave/containerizer/mesos/isolators/docker/volume/isolator.hpp	\
   slave/containerizer/mesos/isolators/filesystem/linux.hpp		\
@@ -1125,7 +1119,6 @@ MESOS_NETWORK_ISOLATOR_FILES =						\
   linux/routing/filter/icmp.cpp						\
   linux/routing/filter/ip.cpp						\
   linux/routing/link/link.cpp						\
-  linux/routing/link/veth.cpp						\
   linux/routing/queueing/fq_codel.cpp					\
   linux/routing/queueing/htb.cpp					\
   linux/routing/queueing/ingress.cpp					\
@@ -1147,7 +1140,6 @@ MESOS_NETWORK_ISOLATOR_FILES +=						\
   linux/routing/filter/priority.hpp					\
   linux/routing/link/internal.hpp					\
   linux/routing/link/link.hpp						\
-  linux/routing/link/veth.hpp						\
   linux/routing/queueing/discipline.hpp					\
   linux/routing/queueing/fq_codel.hpp					\
   linux/routing/queueing/htb.hpp					\
@@ -2136,7 +2128,6 @@ mesos_tests_SOURCES =						\
   tests/common/command_utils_tests.cpp				\
   tests/common/http_tests.cpp					\
   tests/common/recordio_tests.cpp				\
-  tests/containerizer/appc_spec_tests.cpp			\
   tests/containerizer/composing_containerizer_tests.cpp		\
   tests/containerizer/docker_containerizer_tests.cpp		\
   tests/containerizer/docker_spec_tests.cpp			\
