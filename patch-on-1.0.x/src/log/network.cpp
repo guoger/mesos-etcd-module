@@ -39,7 +39,9 @@ EtcdNetwork::EtcdNetwork(
   process = new EtcdNetworkProcess(url, ttl, base);
   spawn(process);
 
-  watch();
+  node = dispatch(process, &EtcdNetworkProcess::get);
+  node.onAny(
+      executor.defer(lambda::bind(&EtcdNetwork::_watch, this)));
 }
 
 
@@ -49,9 +51,9 @@ Future<Nothing> EtcdNetwork::join(const std::string& pid) const
 }
 
 
-void EtcdNetwork::watch()
+void EtcdNetwork::watch(const Option<uint64_t>& index)
 {
-  node = dispatch(process, &EtcdNetworkProcess::watch);
+  node = dispatch(process, &EtcdNetworkProcess::watch, index);
   node.onAny(
       executor.defer(lambda::bind(&EtcdNetwork::_watch, this)));
 }
@@ -66,22 +68,30 @@ void EtcdNetwork::_watch()
   }
 
   CHECK_READY(node);
-  CHECK_SOME(node.get());
-  CHECK_SOME(node.get().get().nodes);
+
+  if (node.get().isNone() ||
+      node.get().get().nodes.isNone()) {
+    LOG(INFO) << "No data found, retry";
+    watch();
+    return;
+  }
 
   const vector<Node>& nodes = node.get().get().nodes.get();
   std::set<process::UPID> pids;
+  uint64_t index = 1;
 
   foreach (const Node& _node, nodes) {
     process::UPID pid(_node.value.get());
     CHECK(pid) << "Failed to parse '" << _node.value.get() << "'";
     pids.insert(pid);
+
+    index = std::max(index, _node.modifiedIndex.get());
   }
 
   LOG(INFO) << "Etcd group PIDs: " << stringify(pids);
   set(pids | base);
 
-  watch();
+  watch(index);
 }
 
 
@@ -102,6 +112,12 @@ Future<Nothing> EtcdNetworkProcess::join(const string& pid)
 {
   return client.join(pid, ttl)
     .then(defer(self(), &Self::_join, lambda::_1));
+}
+
+
+Future<Option<Node>> EtcdNetworkProcess::get()
+{
+  return client.get();
 }
 
 
@@ -150,13 +166,23 @@ Future<Option<Node>> EtcdNetworkProcess::repair(
 }
 
 
-Future<Option<Node>> EtcdNetworkProcess::watch()
+Future<Option<Node>> EtcdNetworkProcess::watch(const Option<uint64_t>& index)
 {
+  if (index.isSome()) {
+    waitIndex = std::max(index.get(), waitIndex);
+  }
+
   return client.watch(waitIndex + 1, None(), true)
-    .then(defer(self(), [this](const Option<Node>& node){
-      CHECK_SOME(node);
-      CHECK_SOME(node.get().modifiedIndex);
-      waitIndex = std::max(node.get().modifiedIndex.get(), waitIndex);
+    .then(defer(self(), [this](const Future<Option<Node>>& node){
+      CHECK_READY(node);
+      // An empty node is most likely due to watch error 401, outdated index,
+      // which indicates that join has not been completed yet. We simply ignore
+      // the error here because we expect join to be completed soon.
+      // TODO(guoger) Use index in reponse with error code 401.
+      if (node.get().isSome()) {
+        CHECK_SOME(node.get().get().modifiedIndex);
+        waitIndex = std::max(node.get().get().modifiedIndex.get(), waitIndex);
+      }
       return client.get();
     }));
 }

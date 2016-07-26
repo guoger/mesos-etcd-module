@@ -545,6 +545,9 @@ Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
 Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
 {
   if (response.errorCode.isSome()) {
+    if (response.errorCode.get() == 401) {
+      return None();
+    }
     return failure(response);
   }
   else if (response.action.isSome()) {

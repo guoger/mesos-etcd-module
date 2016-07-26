@@ -160,7 +160,10 @@ public:
 
   process::Future<Nothing> join(const std::string& pid);
 
-  process::Future<Option<etcd::Node>> watch();
+  process::Future<Option<etcd::Node>> watch(
+      const Option<uint64_t>& index = None());
+
+  process::Future<Option<etcd::Node>> get();
 
 private:
   etcd::EtcdClient client;
@@ -168,6 +171,9 @@ private:
   // The set of PIDs that are always in the network.
   std::set<process::UPID> base;
   process::Future<Option<etcd::Node>> watching;
+
+  // Max Etcd index we've seen so far, which means we always watch for
+  // waitIndex + 1.
   uint64_t waitIndex;
 
   process::Future<Nothing> _join(
@@ -200,7 +206,7 @@ private:
 
   process::Future<Option<etcd::Node>> _join(const std::string& pid);
 
-  void watch();
+  void watch(const Option<uint64_t>& index = None());
   void _watch();
 };
 
