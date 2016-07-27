@@ -23,7 +23,7 @@
 #include <mesos/master/contender.hpp>
 #include <mesos/master/detector.hpp>
 
-#include <mesos/etcd/url.hpp>
+#include "url.hpp"
 
 #include "contender/etcd.hpp"
 #include "detector/etcd.hpp"

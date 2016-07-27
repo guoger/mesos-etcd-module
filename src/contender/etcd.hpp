@@ -17,10 +17,9 @@
 #ifndef __CONTENDER_ETCD_HPP__
 #define __CONTENDER_ETCD_HPP__
 
-//#include <mesos/mesos.hpp>
-
 #include <mesos/master/contender.hpp>
-#include <mesos/etcd/url.hpp>
+
+#include "url.hpp"
 
 using namespace mesos;
 using namespace mesos::master::contender;

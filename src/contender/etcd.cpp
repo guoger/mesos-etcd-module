@@ -17,7 +17,6 @@
 #include <mesos/mesos.hpp>
 
 #include <mesos/master/contender.hpp>
-#include <mesos/etcd/client.hpp>
 
 #include <process/defer.hpp>
 #include <process/future.hpp>
@@ -31,6 +30,7 @@
 
 #include "contender.hpp"
 #include "etcd.hpp"
+#include "client.hpp"
 
 using namespace mesos;
 using namespace process;

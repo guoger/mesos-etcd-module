@@ -32,7 +32,7 @@
 #include <stout/stringify.hpp>
 #include <stout/try.hpp>
 
-#include <mesos/etcd/client.hpp>
+#include "client.hpp"
 
 using namespace process;
 
@@ -41,8 +41,8 @@ using std::vector;
 
 namespace etcd {
 
-const uint32_t MAX_RETRY_TIMES = 2;
-const Duration RETRY_INTERVAL = Seconds(4);
+const uint32_t MAX_RETRY_TIMES = 3;
+const Duration RETRY_INTERVAL = Seconds(5);
 
 Try<Node*> Node::parse(const JSON::Object& object)
 {
@@ -108,7 +108,23 @@ Try<Node*> Node::parse(const JSON::Object& object)
     node->value = value.get().value;
   }
 
-  // TODO(benh): Parse 'dir' and 'nodes'.
+  Result<JSON::Array> nodes = object.find<JSON::Array>("nodes");
+
+  if (nodes.isError()) {
+    return Error("Failed to find 'nodes' in JSON: " + nodes.error());
+  } else if (nodes.isSome()) {
+    node->nodes = vector<Node>();
+    foreach (const JSON::Value& value, nodes.get().values) {
+      JSON::Object object = value.as<JSON::Object>();
+      Try<Node*> parse = Node::parse(object);
+      if (parse.isError()) {
+        return Error("Failed to parse nodes in JSON: " + parse.error());
+      }
+      node->nodes.get().push_back(*parse.get());
+    }
+  }
+
+  // TODO(guoger): parse 'dir'.
 
   // TODO(benh): Do any necessary validation.
 
@@ -176,7 +192,7 @@ Try<Response> Response::parse(const Try<JSON::Object>& object)
   }
 
   // Check and see if we have a 'prevNode'.
-  Node* previous = NULL;
+  Node* previous = nullptr;
 
   Result<JSON::Object> prevNode = object.get().find<JSON::Object>("prevNode");
 
@@ -261,16 +277,23 @@ public:
   {
   }
 
-  Future<Option<Node>> create(const Option<string>& value,
-                              const Option<Duration>& ttl,
-                              const Option<bool> prevExist,
-                              const Option<uint64_t>& prevIndex,
-                              const Option<string>& prevValue);
+  Future<Option<Node>> create(
+      const Option<string>& key,
+      const Option<string>& value,
+      const Option<Duration>& ttl,
+      const Option<bool> prevExist,
+      const Option<uint64_t>& prevIndex,
+      const Option<string>& prevValue,
+      const Option<bool> refresh);
 
   Future<Option<Node>> get();
 
-  Future<Option<Node>> watch(const Option<uint64_t>& waitIndex);
+  Future<Option<Node>> watch(const Option<uint64_t>& waitIndex,
+                             const Option<std::string>& key,
+                             const Option<bool> recursive);
 
+  Future<Option<Node>> join(const string& value,
+                            const Option<Duration>& ttl = None());
 
 private:
   // Forward declarations of continuations.
@@ -285,26 +308,42 @@ private:
   Future<Option<Node>> _watch(vector<http::URL> urls, uint32_t index);
   Future<Option<Node>> __watch(const Response& response);
 
+  Future<Option<Node>> _join(const string& value,
+                             const vector<http::URL>& urls,
+                             uint32_t index);
+  Future<Option<Node>> __join(const Response& response);
+
   URL etcdURL;
   Option<Duration> defaultTTL;
 };
 
 
 Future<Option<Node>> EtcdClientProcess::create(
+  const Option<string>& key,
   const Option<string>& value,
   const Option<Duration>& ttl,
   const Option<bool> prevExist,
   const Option<uint64_t>& prevIndex,
-  const Option<string>& prevValue)
+  const Option<string>& prevValue,
+  const Option<bool> refresh)
 {
   // Transform the etcd URL into a collection of HTTP URLs.
   vector<http::URL> urls;
 
   foreach (const URL::Server& server, etcdURL.servers) {
     // TODO(benh): Use HTTPS after supported in libprocess.
-    http::URL url("http", server.host, server.port, etcdURL.path);
+    http::URL url(
+        "http",
+        server.host,
+        server.port,
+        key.isSome() ? "/v2/keys" + key.get() : etcdURL.path);
 
-    url.query["value"] = value.get();
+    if (refresh.isSome() && refresh.get()) {
+      url.query["refresh"] = stringify(refresh.get());
+    } else {
+      CHECK_SOME(value);
+      url.query["value"] = value.get();
+    }
 
     if (ttl.isSome()) {
       // Because etcd expects TTLs as integer seconds we need cast the
@@ -448,19 +487,29 @@ Future<Option<Node>> EtcdClientProcess::__get(const Response& response)
 }
 
 
-Future<Option<Node>> EtcdClientProcess::watch(const Option<uint64_t>& waitIndex)
+Future<Option<Node>> EtcdClientProcess::watch(
+    const Option<uint64_t>& waitIndex,
+    const Option<string>& key,
+    const Option<bool> recursive)
 {
   // Transform the etcd URL into an array of HTTP URLs.
   vector<http::URL> urls;
 
   foreach (const URL::Server& server, etcdURL.servers) {
     // TODO(benh): Use HTTPS after supported in libprocess.
-    http::URL url("http", server.host, server.port, etcdURL.path);
+    http::URL url("http",
+                  server.host,
+                  server.port,
+                  key.isSome() ? "/v2/keys" + key.get() : etcdURL.path);
 
     url.query["wait"] = "true";
 
     if (waitIndex.isSome()) {
       url.query["waitIndex"] = stringify(waitIndex.get());
+    }
+
+    if (recursive.isSome()) {
+      url.query["recursive"] = stringify(recursive.get());
     }
 
     urls.push_back(url);
@@ -496,6 +545,9 @@ Future<Option<Node>> EtcdClientProcess::_watch(vector<http::URL> urls,
 Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
 {
   if (response.errorCode.isSome()) {
+    if (response.errorCode.get() == 401) {
+      return None();
+    }
     return failure(response);
   }
   else if (response.action.isSome()) {
@@ -515,6 +567,75 @@ Future<Option<Node>> EtcdClientProcess::__watch(const Response& response)
 }
 
 
+Future<Option<Node>> EtcdClientProcess::join(
+  const string& value,
+  const Option<Duration>& ttl)
+{
+  // Transform the etcd URL into a collection of HTTP URLs.
+  vector<http::URL> urls;
+
+  foreach (const URL::Server& server, etcdURL.servers) {
+    // TODO(benh): Use HTTPS after supported in libprocess.
+    http::URL url("http", server.host, server.port, etcdURL.path);
+
+    if (ttl.isSome()) {
+      // Because etcd expects TTLs as integer seconds we need cast the
+      // double we get back from Duration::secs() to an integer before
+      // we turn it into a string.
+      url.query["ttl"] = stringify(uint64_t(ttl.get().secs()));
+    }
+
+    urls.push_back(url);
+  }
+
+  return _join(value, urls, 0);
+}
+
+
+Future<Option<Node>> EtcdClientProcess::_join(
+    const string& value,
+    const vector<http::URL>& urls,
+    uint32_t index)
+{
+  if (index >= urls.size()) {
+    Promise<Option<Node>>* promise = new Promise<Option<Node>>();
+    return promise->future().after(
+      Seconds(10), defer(self(), &EtcdClientProcess::_join, value, urls, 0));
+  }
+
+  http::URL url = urls[index];
+  LOG(INFO) << "[etcd.join] Trying etcd server " << url;
+
+  return http::post(url,
+                    None(),
+                    "value=" + value,
+                    "application/x-www-form-urlencoded")
+    .then(lambda::bind(&parse, lambda::_1))
+    .then(defer(self(), &EtcdClientProcess::__join, lambda::_1))
+    .repair(defer(self(), &EtcdClientProcess::_join, value, urls, index + 1));
+}
+
+
+Future<Option<Node>> EtcdClientProcess::__join(const Response& response)
+{
+  if (response.errorCode.isSome()) {
+    // If the key already exists, or had the wrong value we return
+    // None rather than error.
+    // 101 means "Compare failed", 105 means "Key already exists"
+    if (response.errorCode.get() == 101 || response.errorCode.get() == 105) {
+      return None();
+    }
+    return failure(response);
+  }
+  else if (response.node.isNone()) {
+    return Failure("Expecting 'node' in response");
+  };
+  // Previous might be some because we aren't always strictly
+  // creation, just preconditioned.
+  return response.node.get();
+}
+
+
 EtcdClient::EtcdClient(const URL& url, const Option<Duration>& defaultTTL)
 {
   process = new EtcdClientProcess(url, defaultTTL);
@@ -523,16 +644,24 @@ EtcdClient::EtcdClient(const URL& url, const Option<Duration>& defaultTTL)
 
 
 process::Future<Option<Node>> EtcdClient::create(
-    const Option<std::string>& key,
-    const Option<std::string>& value,
-    const Option<Duration>& ttl,
-    const Option<bool> prevExist,
-    const Option<uint64_t>& prevIndex,
-    const Option<std::string>& prevValue,
-    const Option<bool> refresh)
+  const Option<std::string>& key,
+  const Option<std::string>& value,
+  const Option<Duration>& ttl,
+  const Option<bool> prevExist,
+  const Option<uint64_t>& prevIndex,
+  const Option<std::string>& prevValue,
+  const Option<bool> refresh)
 {
-  return dispatch(process, &EtcdClientProcess::create, value, ttl, prevExist,
-                  prevIndex, prevValue);
+  return dispatch(
+      process,
+      &EtcdClientProcess::create,
+      key,
+      value,
+      ttl,
+      prevExist,
+      prevIndex,
+      prevValue,
+      refresh);
 }
 
 
@@ -544,10 +673,27 @@ process::Future<Option<Node>> EtcdClient::get()
 
 process::Future<Option<Node>> EtcdClient::watch(
   const Option<uint64_t>& waitIndex,
-  const Option<std::string>& key,
+  const Option<string>& key,
   const Option<bool> recursive)
 {
-  return dispatch(process, &EtcdClientProcess::watch, waitIndex);
+  return dispatch(
+      process,
+      &EtcdClientProcess::watch,
+      waitIndex,
+      key,
+      recursive);
+}
+
+
+process::Future<Option<Node>> EtcdClient::join(
+  const std::string& value,
+  const Duration& ttl) const
+{
+  return dispatch(
+      process,
+      &EtcdClientProcess::join,
+      value,
+      ttl);
 }
 
 } // namespace etcd {

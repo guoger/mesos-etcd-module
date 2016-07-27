@@ -22,11 +22,10 @@
 #include <stout/option.hpp>
 #include <stout/strings.hpp>
 
-#include <mesos/etcd/url.hpp>
+#include "url.hpp"
 
 using std::string;
 using std::vector;
-
 
 Try<etcd::URL> etcd::URL::parse(string url)
 {
