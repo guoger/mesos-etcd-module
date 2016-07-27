@@ -19,18 +19,22 @@
 
 #include <mesos/module/contender.hpp>
 #include <mesos/module/detector.hpp>
+#include <mesos/module/network.hpp>
 
+#include <mesos/log/network.hpp>
 #include <mesos/master/contender.hpp>
 #include <mesos/master/detector.hpp>
 
-#include "url.hpp"
-
 #include "contender/etcd.hpp"
 #include "detector/etcd.hpp"
+#include "network/network.hpp"
+
+#include "url.hpp"
 
 //using namespace mesos;
 using namespace mesos::master::contender;
 using namespace mesos::master::detector;
+using namespace mesos::log;
 
 static MasterContender* createContender(const Parameters& parameters)
 {
@@ -104,3 +108,77 @@ mesos::modules::Module<MasterDetector> org_apache_mesos_EtcdMasterDetector(
     "Test MasterDetector module.",
     NULL,
     createDetector);
+
+
+static mesos::log::Network* createNetwork(const Parameters& parameters)
+{
+  Option<std::string> urls;
+  Option<std::string> pid;
+  Option<std::string> ttl;
+  foreach (const Parameter& parameter, parameters.parameter()) {
+    if (parameter.key() == "url") {
+      urls = parameter.value();
+    }
+
+    if (parameter.key() == "pid") {
+      pid = parameter.value();
+    }
+
+    if (parameter.key() == "ttl") {
+      ttl = parameter.value();
+    }
+  }
+
+  if (urls.isNone()) {
+    LOG(ERROR) << "No etcd URLs provided";
+    return NULL;
+  }
+
+  Try<etcd::URL> urls_ = etcd::URL::parse(urls.get());
+  if (urls_.isError()) {
+    LOG(ERROR) << "Parameter '" << urls.get() << "' could not be parsed into "
+                  "a valid URL object: " << urls_.error();
+    return NULL;
+  }
+
+  if (ttl.isNone()) {
+    LOG(ERROR) << "No etcd key TTL provided";
+    return NULL;
+  }
+
+  Try<Duration> ttl_ = Duration::parse(ttl.get());
+  if (ttl_.isError()) {
+    LOG(ERROR) << "Parameter '" << ttl.get() << "' could not be parsed into "
+                  "a valid Duration: " << ttl_.error();
+    return NULL;
+  }
+
+  if (pid.isNone()) {
+    LOG(ERROR) << "No base pid provided";
+    return NULL;
+  }
+
+  process::UPID pid_(pid.get());
+  if (!pid_) {
+    LOG(ERROR) << "Parameter '" << pid.get() << "' could not be parsed into "
+                  "a valid UPID.";
+    return NULL;
+  }
+
+  return new etcd::network::EtcdNetwork(
+      urls_.get(),
+      ttl_.get(),
+      pid_);
+}
+
+
+// Declares a MasterDetector module named
+// 'org_apache_mesos_TestMasterDetector'.
+mesos::modules::Module<Network> org_apache_mesos_EtcdLogNetwork(
+    MESOS_MODULE_API_VERSION,
+    MESOS_VERSION,
+    "Apache Mesos",
+    "modules@mesos.apache.org",
+    "Test LogNetwork module.",
+    NULL,
+    createNetwork);

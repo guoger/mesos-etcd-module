@@ -37,6 +37,7 @@ libmesos_etcd_module_la_SOURCES =	\
   src/contender/etcd.cpp			\
   src/detector/detector.cpp			\
   src/detector/etcd.cpp				\
+  src/network/network.cpp			\
   src/client.cpp					\
   src/url.cpp						\
   src/etcd_module.cpp
