@@ -83,6 +83,8 @@ EtcdNetwork::EtcdNetwork(
   process = new EtcdNetworkProcess(url, ttl, base);
   spawn(process);
 
+  dispatch(process, &EtcdNetworkProcess::join, _base);
+
   node = dispatch(process, &EtcdNetworkProcess::get);
   node.onAny(
       executor.defer(lambda::bind(&EtcdNetwork::_watch, this)));
