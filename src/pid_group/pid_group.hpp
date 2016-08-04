@@ -14,35 +14,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __ETCD_NETWORK_HPP__
-#define __ETCD_NETWORK_HPP__
+#ifndef __ETCD_PID_GROUP_HPP__
+#define __ETCD_PID_GROUP_HPP__
 
-#include <mesos/log/network.hpp>
+#include <process/pid_group.hpp>
 
 #include "client.hpp"
 #include "url.hpp"
 
 namespace etcd {
-namespace network {
 
 // Forward declaration
-class EtcdNetworkProcess;
+class EtcdPIDGroupProcess;
 
-class EtcdNetwork : public mesos::log::Network
+class EtcdPIDGroup : public process::PIDGroup
 {
 public:
-  EtcdNetwork(
-      const etcd::URL& url,
-      const Duration& ttl,
-      const process::UPID base);
+  EtcdPIDGroup(const etcd::URL& url, const Duration& ttl);
 
   process::Future<Nothing> join(const std::string& pid) const;
 
+  void initialize(const process::UPID& _base);
+
 private:
   const etcd::URL url;
-  std::set<process::UPID> base;
+  const Duration& ttl;
   process::Future<Option<etcd::Node>> node;
-  EtcdNetworkProcess* process;
+  EtcdPIDGroupProcess* process;
   process::Executor executor;
 
   process::Future<Option<etcd::Node>> _join(const std::string& pid);
@@ -51,7 +49,6 @@ private:
   void _watch();
 };
 
-} // namespace log {
 } // namespace etcd {
 
-#endif // __ETCD_NETWORK_HPP__
+#endif // __ETCD_PID_GROUP_HPP__

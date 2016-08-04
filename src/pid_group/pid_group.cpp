@@ -23,21 +23,19 @@
 #include <stout/check.hpp>
 #include <stout/set.hpp>
 
-#include "network.hpp"
 #include "client.hpp"
+#include "pid_group.hpp"
 
 using std::string;
 using std::vector;
 using namespace process;
-using namespace etcd;
 
 namespace etcd {
-namespace network {
 
-class EtcdNetworkProcess : public ProtobufProcess<EtcdNetworkProcess>
+class EtcdPIDGroupProcess : public ProtobufProcess<EtcdPIDGroupProcess>
 {
 public:
-  EtcdNetworkProcess(
+  EtcdPIDGroupProcess(
       const etcd::URL& url,
       const Duration& timeout,
       const std::set<process::UPID>& _base);
@@ -71,41 +69,45 @@ private:
 };
 
 
-EtcdNetwork::EtcdNetwork(
-    const etcd::URL& _url,
-    const Duration& ttl,
-    const process::UPID _base)
-  : url(_url),
-    base(Set<process::UPID>(_base))
+EtcdPIDGroup::EtcdPIDGroup(const etcd::URL& _url, const Duration& _ttl)
+  : url(_url), ttl(_ttl)
 {
+}
+
+
+Future<Nothing> EtcdPIDGroup::join(const std::string& pid) const
+{
+  return dispatch(process, &EtcdPIDGroupProcess::join, pid);
+}
+
+
+void EtcdPIDGroup::initialize(const process::UPID& _base)
+{
+  base = Set<process::UPID>(_base);
+
   set(base);
 
-  process = new EtcdNetworkProcess(url, ttl, base);
+  process = new EtcdPIDGroupProcess(url, ttl, base);
+
   spawn(process);
 
-  dispatch(process, &EtcdNetworkProcess::join, _base);
+  dispatch(process, &EtcdPIDGroupProcess::join, _base);
 
-  node = dispatch(process, &EtcdNetworkProcess::get);
+  node = dispatch(process, &EtcdPIDGroupProcess::get);
   node.onAny(
-      executor.defer(lambda::bind(&EtcdNetwork::_watch, this)));
+      executor.defer(lambda::bind(&EtcdPIDGroup::_watch, this)));
 }
 
 
-Future<Nothing> EtcdNetwork::join(const std::string& pid) const
+void EtcdPIDGroup::watch(const Option<uint64_t>& index)
 {
-  return dispatch(process, &EtcdNetworkProcess::join, pid);
-}
-
-
-void EtcdNetwork::watch(const Option<uint64_t>& index)
-{
-  node = dispatch(process, &EtcdNetworkProcess::watch, index);
+  node = dispatch(process, &EtcdPIDGroupProcess::watch, index);
   node.onAny(
-      executor.defer(lambda::bind(&EtcdNetwork::_watch, this)));
+      executor.defer(lambda::bind(&EtcdPIDGroup::_watch, this)));
 }
 
 
-void EtcdNetwork::_watch()
+void EtcdPIDGroup::_watch()
 {
   if (!node.isReady()) {
     LOG(INFO) << "Failed to watch Etcd, retry";
@@ -141,7 +143,7 @@ void EtcdNetwork::_watch()
 }
 
 
-EtcdNetworkProcess::EtcdNetworkProcess(
+EtcdPIDGroupProcess::EtcdPIDGroupProcess(
     const etcd::URL& url,
     const Duration& _ttl,
     const std::set<process::UPID>& _base)
@@ -154,20 +156,20 @@ EtcdNetworkProcess::EtcdNetworkProcess(
 }
 
 
-Future<Nothing> EtcdNetworkProcess::join(const string& pid)
+Future<Nothing> EtcdPIDGroupProcess::join(const string& pid)
 {
   return client.join(pid, ttl)
     .then(defer(self(), &Self::_join, lambda::_1));
 }
 
 
-Future<Option<Node>> EtcdNetworkProcess::get()
+Future<Option<Node>> EtcdPIDGroupProcess::get()
 {
   return client.get();
 }
 
 
-Future<Nothing> EtcdNetworkProcess::_join(const Future<Option<Node>>& node)
+Future<Nothing> EtcdPIDGroupProcess::_join(const Future<Option<Node>>& node)
 {
   if (node.isFailed() || node.isDiscarded()) {
     LOG(FATAL) << "Failed to insert pid";
@@ -191,7 +193,7 @@ Future<Nothing> EtcdNetworkProcess::_join(const Future<Option<Node>>& node)
 }
 
 
-Future<Nothing> EtcdNetworkProcess::__join(const Node& node)
+Future<Nothing> EtcdPIDGroupProcess::__join(const Node& node)
 {
   return client.create(
       node.key,
@@ -205,14 +207,14 @@ Future<Nothing> EtcdNetworkProcess::__join(const Node& node)
 }
 
 
-Future<Option<Node>> EtcdNetworkProcess::repair(
+Future<Option<Node>> EtcdPIDGroupProcess::repair(
     const Future<Option<Node>>& future)
 {
   return None();
 }
 
 
-Future<Option<Node>> EtcdNetworkProcess::watch(const Option<uint64_t>& index)
+Future<Option<Node>> EtcdPIDGroupProcess::watch(const Option<uint64_t>& index)
 {
   if (index.isSome()) {
     waitIndex = std::max(index.get(), waitIndex);
@@ -233,5 +235,4 @@ Future<Option<Node>> EtcdNetworkProcess::watch(const Option<uint64_t>& index)
     }));
 }
 
-} // namespace log {
 } // namespace etcd {

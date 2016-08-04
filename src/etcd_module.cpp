@@ -19,22 +19,24 @@
 
 #include <mesos/module/contender.hpp>
 #include <mesos/module/detector.hpp>
-#include <mesos/module/network.hpp>
+#include <mesos/module/pid_group.hpp>
 
-#include <mesos/log/network.hpp>
 #include <mesos/master/contender.hpp>
 #include <mesos/master/detector.hpp>
 
+#include <process/pid_group.hpp>
+
 #include "contender/etcd.hpp"
+
 #include "detector/etcd.hpp"
-#include "network/network.hpp"
+
+#include "pid_group/pid_group.hpp"
 
 #include "url.hpp"
 
 //using namespace mesos;
 using namespace mesos::master::contender;
 using namespace mesos::master::detector;
-using namespace mesos::log;
 
 static MasterContender* createContender(const Parameters& parameters)
 {
@@ -110,7 +112,7 @@ mesos::modules::Module<MasterDetector> org_apache_mesos_EtcdMasterDetector(
     createDetector);
 
 
-static mesos::log::Network* createNetwork(const Parameters& parameters)
+static process::PIDGroup* createPIDGroup(const Parameters& parameters)
 {
   Option<std::string> urls;
   Option<std::string> pid;
@@ -118,10 +120,6 @@ static mesos::log::Network* createNetwork(const Parameters& parameters)
   foreach (const Parameter& parameter, parameters.parameter()) {
     if (parameter.key() == "url") {
       urls = parameter.value();
-    }
-
-    if (parameter.key() == "pid") {
-      pid = parameter.value();
     }
 
     if (parameter.key() == "ttl") {
@@ -153,32 +151,19 @@ static mesos::log::Network* createNetwork(const Parameters& parameters)
     return NULL;
   }
 
-  if (pid.isNone()) {
-    LOG(ERROR) << "No base pid provided";
-    return NULL;
-  }
-
-  process::UPID pid_(pid.get());
-  if (!pid_) {
-    LOG(ERROR) << "Parameter '" << pid.get() << "' could not be parsed into "
-                  "a valid UPID.";
-    return NULL;
-  }
-
-  return new etcd::network::EtcdNetwork(
+  return new etcd::EtcdPIDGroup(
       urls_.get(),
-      ttl_.get(),
-      pid_);
+      ttl_.get());
 }
 
 
 // Declares a MasterDetector module named
-// 'org_apache_mesos_TestMasterDetector'.
-mesos::modules::Module<Network> org_apache_mesos_EtcdLogNetwork(
+// 'org_apache_mesos_EtcdPIDGroup'.
+mesos::modules::Module<process::PIDGroup> org_apache_mesos_EtcdPIDGroup(
     MESOS_MODULE_API_VERSION,
     MESOS_VERSION,
     "Apache Mesos",
     "modules@mesos.apache.org",
-    "Test LogNetwork module.",
+    "Test PIDGroup module.",
     NULL,
-    createNetwork);
+    createPIDGroup);
