@@ -20,6 +20,19 @@
               "value": "etcd://10.0.0.1:2379,10.0.0.2:2379,10.0.0.3:2379/v2/keys/master"
             }
            ]
+         },
+         {
+           "name": "org_apache_mesos_EtcdPIDGroup",
+           "parameters": [
+            {
+              "key": "url",
+              "value": "etcd://10.0.0.1:2379,10.0.0.2:2379,10.0.0.3:2379/v2/keys/replicated_log"
+            },
+            {
+              "key": "ttl",
+              "value": "10secs"
+            }
+           ]
          }
        ]
      }
