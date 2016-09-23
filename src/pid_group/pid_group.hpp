@@ -38,7 +38,7 @@ public:
 
 private:
   const etcd::URL url;
-  const Duration& ttl;
+  const Duration ttl;
   process::Future<Option<etcd::Node>> node;
   EtcdPIDGroupProcess* process;
   process::Executor executor;
