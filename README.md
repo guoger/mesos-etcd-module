@@ -7,7 +7,7 @@ Etcd v3.0.3
 # How-To
 ## Linux
 ### Step 1. Build Mesos
-Replicated log in Mesos is still coupled with Zookeeper. The work to modularize this part is still undergoing. For now, please clone Mesos from [this branch](https://github.com/guoger/mesos/tree/replicated-log-etcd).
+Replicated log in Mesos is still coupled with Zookeeper. The work to modularize this part is still undergoing. For now, please clone Mesos from [this branch](https://github.ibm.com/guojiannan/mesos/tree/pid-group-on-1.1.x).
 Refer to [Mesos getting started](http://mesos.apache.org/gettingstarted/) for instructions to build Mesos.
 
 Supply `--enable-install-module-dependencies` to `configure`. This installs 3rdparty libraries that modules depend on. If you don't want system-wide Mesos installation, supply `--prefix=/path/to/install/location` as well. `make install` when compilation is finished.
@@ -29,7 +29,7 @@ An example JSON config file `etcd_module.json.sample` can be found in root direc
 The easiest way to try out the module is to have an etcd instance running locally. See [this guide](https://github.com/coreos/etcd#running-etcd).
 
 After etcd is started, run multiple Mesos master instances `./bin/mesos-master.sh` with flags:
-`--modules="file:///path/to/etcd_module.json"`, `--master_contender=org_apache_mesos_EtcdMasterContender`, `--master_detector=org_apache_mesos_EtcdMasterDetector`, `--etcd://<host>:<post>/v2/keys/replicated_log`, `--quorum=<number>`
+`--modules="file:///path/to/etcd_module.json"`, `--master_contender=org_apache_mesos_EtcdMasterContender`, `--master_detector=org_apache_mesos_EtcdMasterDetector`, `--pid_group=org_apache_mesos_EtcdPIDGroup`, `--quorum=<number>`
 One of the masters will get elected as leader. Killing the leader will result in another round of contending until new leader being elected.
 
 Run Mesos agent `./bin/mesos-agent.sh` with flags:
