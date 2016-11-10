@@ -16,12 +16,12 @@
 
 
 #include <algorithm>
+#include <set>
 
 #include <process/check.hpp>
 #include <process/dispatch.hpp>
 
 #include <stout/check.hpp>
-#include <stout/set.hpp>
 
 #include "client.hpp"
 #include "pid_group.hpp"
@@ -83,7 +83,7 @@ Future<Nothing> EtcdPIDGroup::join(const std::string& pid) const
 
 void EtcdPIDGroup::initialize(const process::UPID& _base)
 {
-  base = Set<process::UPID>(_base);
+  base = {_base};
 
   set(base);
 
